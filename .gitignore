@@ -1,7 +1,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudio,csharp,dotnetcore,aspnetcore,node,visualstudiocode,react,windows,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudio,csharp,dotnetcore,aspnetcore,node,visualstudiocode,react,windows,linux
 
-/backend/ProyectoExamenU2/ProyectoExamenU2/appsettings.Development.json
+backend/ProyectoExamenU2/ProyectoExamenU2/appsettings.Development.json
 
 ### ASPNETCore ###
 ## Ignore Visual Studio temporary files, build results, and

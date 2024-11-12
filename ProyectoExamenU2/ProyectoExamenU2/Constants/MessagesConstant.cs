@@ -34,5 +34,12 @@
 
         // Error: Usuario no autenticado
         public const string UNAUTHENTICATED_USER_ERROR = "Error 1005: No autorizado";
+
+
+        // Errores Respecto a Cuentas
+        // Error: El Codigo completo del Padre no coicide con el Codigo del Hijo Proporcionado
+        public const string PreCodeMismatch = "El codigo del padre no coincide con el precodigo proporcionado.";
+        // Cuanta existente 
+        public const string AccountAlreadyExists = "Ya existe una cuenta con el mismo prefijo y código.";
     }
 }

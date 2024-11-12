@@ -26,12 +26,6 @@ namespace ProyectoExamenU2.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("register")]
-        [AllowAnonymous]
-        public async Task<ActionResult<ResponseDto<LoginResponseDto>>> RegisterClient(RegisterClientDto dto)
-        {
-            var response = await _authService.RegisterClientAsync(dto);
-            return StatusCode(response.StatusCode, response);
-        }
+      
     }
 }

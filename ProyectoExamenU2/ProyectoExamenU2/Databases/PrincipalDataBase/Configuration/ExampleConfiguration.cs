@@ -1,5 +1,4 @@
-﻿using ProyectoExamenU2.Database.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ProyectoExamenU2.Databases.PrincipalDataBase.Configuration

@@ -1,6 +1,4 @@
-﻿using ProyectoExamenU2.Constants;
-using ProyectoExamenU2.Database;
-using ProyectoExamenU2.Dtos.Auth;
+﻿using ProyectoExamenU2.Dtos.Auth;
 using ProyectoExamenU2.Dtos.Common;
 using ProyectoExamenU2.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
+using ProyectoExamenU2.Databases.PrincipalDataBase;
 
 namespace ProyectoExamenU2.Services
 {
@@ -86,117 +85,6 @@ namespace ProyectoExamenU2.Services
             };
         }
 
-        public async Task<ResponseDto<LoginResponseDto>> RegisterClientAsync(RegisterClientDto dto)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                var user = new UserEntity
-                {
-                    UserName = dto.Email,
-                    Email = dto.Email,
-                    Name = dto.ClientName
-                };
-
-                // Intento de creación del usuario
-                var result = await _userManager.CreateAsync(user, dto.Password);
-
-                if (!result.Succeeded)
-                {
-                    List<IdentityError> errorList = result.Errors.ToList();  // Listamos los errores
-                    string errors = "";
-
-                    foreach (var error in errorList)
-                    {
-                        errors += error.Description;
-                        if (error.Code == "DuplicateUserName") // si el error trata de DuplicateUserName, personalizar ErrorMessage
-                        {
-                            return new ResponseDto<LoginResponseDto>
-                            {
-                                StatusCode = 400,
-                                Status = false,
-                                Message = "El email ya está registrado en el sistema."
-                            };
-                        }
-                    }
-
-                    return new ResponseDto<LoginResponseDto>
-                    {
-                        StatusCode = 400,
-                        Status = false,
-                        Message = errors
-                    };
-                }
-
-                // Usuario creado exitosamente
-                var userEntity = await _userManager.FindByEmailAsync(dto.Email);
-                await _userManager.AddToRoleAsync(userEntity, RolesConstants.CLIENT);
-
-                // verificacin de tipo de cliente
-                var clientTypeEntity = await _context.TypesOfClient.FindAsync(dto.ClientTypeId);
-                if (clientTypeEntity == null)
-                {
-                    await transaction.RollbackAsync(); // Rollback si no se encuentra el tipo de cliente
-                    return new ResponseDto<LoginResponseDto>
-                    {
-                        StatusCode = 404,
-                        Status = false,
-                        Message = "No se ha encontrado el tipo de cliente especificado."
-                    };
-                }
-
-                // Creación de ClientEntity
-                var clientEntity = new ClientEntity
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userEntity.Id,
-                    ClientTypeId = clientTypeEntity.Id
-                };
-
-                _context.Clients.Add(clientEntity);
-                await _context.SaveChangesAsync(); // Guarda el cliente
-
-                // Confirmamos la transacción después de que todos los pasos fueron exitosos
-                await transaction.CommitAsync();
-
-                // Configuración de Claims para el JWT
-                var authClaims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Email, userEntity.Email),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim("UserId", userEntity.Id),
-                    new Claim(ClaimTypes.Role, RolesConstants.CLIENT)
-                };
-
-                var jwtToken = GetToken(authClaims);
-
-                return new ResponseDto<LoginResponseDto>
-                {
-                    StatusCode = 200,
-                    Status = true,
-                    Message = "Registro de usuario realizado satisfactoriamente.",
-                    Data = new LoginResponseDto
-                    {
-                        Email = userEntity.Email,
-                        Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
-                        TokenExpiration = jwtToken.ValidTo,
-                    }
-                };
-            }
-            catch (Exception e)
-            {
-                await transaction.RollbackAsync(); // Rollback si ocurre una excepción
-                _logger.LogError(e, "Ocurrió un error inesperado al registrar el usuario.");
-                return new ResponseDto<LoginResponseDto>
-                {
-                    StatusCode = 500,
-                    Status = false,
-                    Message = "Ocurrió un error inesperado al registrar el usuario."
-                };
-            }
-        }
-
 
         private JwtSecurityToken GetToken(List<Claim> authClaims)
         {
@@ -215,7 +103,6 @@ namespace ProyectoExamenU2.Services
             var secret = _configuration["JWT:Secret"];
             var iss = _configuration["JWT:ValidIssuer"];
 
-            Console.WriteLine("Estoy cansado jefe");
             return token;
         }
     }

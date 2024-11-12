@@ -2,9 +2,9 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace ProyectoExamenU2.Database.Entities
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
 {
-    public class UserEntity: IdentityUser
+    public class UserEntity : IdentityUser
     {
         public string Name { get; set; }
         //[StringLength(70, MinimumLength = 3)]

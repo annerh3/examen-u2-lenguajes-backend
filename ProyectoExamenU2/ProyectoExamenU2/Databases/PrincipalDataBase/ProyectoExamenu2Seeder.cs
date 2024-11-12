@@ -1,10 +1,10 @@
 ﻿using ProyectoExamenU2.Constants;
-using ProyectoExamenU2.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 
-namespace ProyectoExamenU2.Database
+namespace ProyectoExamenU2.Databases.PrincipalDataBase
 {
     public class ProyectoExamenu2Seeder
     {
@@ -40,7 +40,7 @@ namespace ProyectoExamenU2.Database
             {
                 await LoadRolesAndUsersAsync(userManager, roleManager, loggerFactory);
 
-               // await LoadClientsTypesAsync(loggerFactory, context);
+                // await LoadClientsTypesAsync(loggerFactory, context);
 
             }
             catch (Exception e)
@@ -58,23 +58,23 @@ namespace ProyectoExamenU2.Database
             )
         {
             try
-            { 
-                    for (int i = 0; i < employees.Count(); i++)// Creando Usuarios que son clientes
+            {
+                for (int i = 0; i < employees.Count(); i++)// Creando Usuarios que son clientes
+                {
+                    dynamic usercClientInfo = employees[i]; // para poder acceder a las propiedades del objeto
+
+                    var client = new UserEntity
                     {
-                        dynamic usercClientInfo = employees[i]; // para poder acceder a las propiedades del objeto
+                        Id = usercClientInfo.id.ToString(),
+                        Email = usercClientInfo.email,
+                        UserName = usercClientInfo.email,
+                        Name = usercClientInfo.name
+                    };
 
-                        var client = new UserEntity
-                        {
-                            Id = usercClientInfo.id.ToString(),
-                            Email = usercClientInfo.email,
-                            UserName = usercClientInfo.email,
-                            Name = usercClientInfo.name
-                        };
-
-                        await userManager.CreateAsync(client, "Temporal01*"); // crear usuario cliente
-                        await userManager.AddToRoleAsync(client, RolesConstants.EMPLOYEE); // asignar rol
-                    }
+                    await userManager.CreateAsync(client, "Temporal01*"); // crear usuario cliente
+                    await userManager.AddToRoleAsync(client, RolesConstants.EMPLOYEE); // asignar rol
                 }
+            }
 
             catch (Exception e)
             {

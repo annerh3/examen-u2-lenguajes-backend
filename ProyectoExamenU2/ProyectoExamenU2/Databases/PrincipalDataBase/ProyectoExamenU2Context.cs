@@ -1,14 +1,14 @@
 ﻿
-using ProyectoExamenU2.Database.Configuration;
-using ProyectoExamenU2.Database.Entities;
+using ProyectoExamenU2.Databases.PrincipalDataBase.Configuration;
 using ProyectoExamenU2.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 
-namespace ProyectoExamenU2.Database
+namespace ProyectoExamenU2.Databases.PrincipalDataBase
 {
-    public class ProyectoExamenU2Context: IdentityDbContext<UserEntity>
+    public class ProyectoExamenU2Context : IdentityDbContext<UserEntity>
     {
         //Variables Globales
 
@@ -19,7 +19,7 @@ namespace ProyectoExamenU2.Database
             IAuditService auditService
             ) : base(options)
         {
-            this._auditService = auditService;
+            _auditService = auditService;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -42,7 +42,7 @@ namespace ProyectoExamenU2.Database
             modelBuilder.Entity<IdentityUserToken<string>>().ToTable("users_tokens");
 
             //Aplicacion de las Configuraciones de Entidades
-           // modelBuilder.ApplyConfiguration(new ExampleConfiguration());
+            // modelBuilder.ApplyConfiguration(new ExampleConfiguration());
             modelBuilder.ApplyConfiguration(new AccountCatalogConfiguration());
             modelBuilder.ApplyConfiguration(new BalanceConfiguraction());
             modelBuilder.ApplyConfiguration(new JournalEntryConfiguraction());
@@ -99,7 +99,7 @@ namespace ProyectoExamenU2.Database
                         entity.CreatedBy = _auditService.GetUserId();
                         entity.CreatedDate = DateTime.Now;
                     }
-                   // si esta modificando 
+                    // si esta modificando 
                     else
                     {
                         entity.UpdatedBy = _auditService.GetUserId();
@@ -112,7 +112,7 @@ namespace ProyectoExamenU2.Database
         }
 
         // Agregando el contexto 
-       // public DbSet<CategoryProductEntity> CategoryProducts { get; set; }
+        // public DbSet<CategoryProductEntity> CategoryProducts { get; set; }
         public DbSet<AccountCatalogEntity> AccountCatalogs { get; set; }
         public DbSet<BalanceEntity> Balances { get; set; }
         public DbSet<JournalEntryDetailEntity> JournalEntryDetails { get; set; }

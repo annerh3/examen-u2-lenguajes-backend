@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace ProyectoExamenU2.Database.Configuration
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Configuration
 {
     //public class ExampleConfiguration : IEntityTypeConfiguration<T>
     //{

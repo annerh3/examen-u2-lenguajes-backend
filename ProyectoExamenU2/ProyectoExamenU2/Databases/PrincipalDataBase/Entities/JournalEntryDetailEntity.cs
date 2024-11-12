@@ -1,14 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ProyectoExamenU2.Database.Entities
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
 {
     [Table("journal_entry_detail", Schema = "dbo")]
     public class JournalEntryDetailEntity : BaseEntity
     {
         //Los campos de auditoria ya van anexados 
 
-        [Display (Name ="Id de Partida")]
+        [Display(Name = "Id de Partida")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]
         [Column("journal_entry_id")]
         public Guid JournalEntryId { get; set; }
@@ -19,9 +19,9 @@ namespace ProyectoExamenU2.Database.Entities
         [Required(ErrorMessage = "La {0} es obligatoria.")]
         [Column("acoount_catalog_id")]
         public Guid AccountCatalogId { get; set; }
-        [ForeignKey (nameof(AccountCatalogId))]
+        [ForeignKey(nameof(AccountCatalogId))]
 
-        public virtual AccountCatalogEntity Account {  get; set; }
+        public virtual AccountCatalogEntity Account { get; set; }
 
         [Display(Name = "Monto")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]

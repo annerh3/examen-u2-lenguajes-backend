@@ -1,6 +1,5 @@
 ﻿using ProyectoExamenU2.Constants;
 using ProyectoExamenU2.Database;
-using ProyectoExamenU2.Database.Entities;
 using ProyectoExamenU2.Dtos.Auth;
 using ProyectoExamenU2.Dtos.Common;
 using ProyectoExamenU2.Services.Interfaces;
@@ -9,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 
 namespace ProyectoExamenU2.Services
 {

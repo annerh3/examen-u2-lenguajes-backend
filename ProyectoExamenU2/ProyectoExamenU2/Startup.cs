@@ -1,5 +1,4 @@
 ﻿using ProyectoExamenU2.Database;
-using ProyectoExamenU2.Database.Entities;
 using ProyectoExamenU2.Helpers;
 using ProyectoExamenU2.Services.Interfaces;
 using ProyectoExamenU2.Services;
@@ -8,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 
 namespace ProyectoExamenU2
 {

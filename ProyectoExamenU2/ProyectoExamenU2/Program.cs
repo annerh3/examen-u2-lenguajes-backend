@@ -1,7 +1,7 @@
 using ProyectoExamenU2;
-using ProyectoExamenU2.Database;
-using ProyectoExamenU2.Database.Entities;
 using Microsoft.AspNetCore.Identity;
+using ProyectoExamenU2.Databases.PrincipalDataBase;
+using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 var startup = new Startup(builder.Configuration); // Inicializacion del Proyecto mediante el Startup

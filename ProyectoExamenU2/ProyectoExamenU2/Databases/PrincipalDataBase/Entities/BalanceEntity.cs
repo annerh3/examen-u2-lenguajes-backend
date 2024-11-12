@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ProyectoExamenU2.Database.Entities
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
 {
     [Table("balances", Schema = "dbo")]
-    public class BalanceEntity: BaseEntity
+    public class BalanceEntity : BaseEntity
     {
         [Display(Name = "Id de Cuenta")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]

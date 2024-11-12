@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ProyectoExamenU2.Database.Entities
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
 {
     [Table("account_catalog", Schema = "dbo")]
     public class AccountCatalogEntity : BaseEntity

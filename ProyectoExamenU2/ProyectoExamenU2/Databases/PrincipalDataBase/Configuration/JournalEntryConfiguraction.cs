@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ProyectoExamenU2.Database.Entities;
+using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 
-namespace ProyectoExamenU2.Database.Configuration
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Configuration
 {
     public class JournalEntryConfiguraction : IEntityTypeConfiguration<JournalEntryEntity>
     {

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace ProyectoExamenU2.Database.Entities
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
 {
     public class AuditEntity
     {

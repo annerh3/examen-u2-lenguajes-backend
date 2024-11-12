@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ProyectoExamenU2.Database.Entities
+namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
 {
     [Table("journal_entry", Schema = "dbo")]
-    public class JournalEntryEntity:BaseEntity
+    public class JournalEntryEntity : BaseEntity
     {
         [Display(Name = "N Partida")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]
@@ -15,15 +15,15 @@ namespace ProyectoExamenU2.Database.Entities
 
         [Display(Name = "Description")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]
-        [MaxLength(600 , ErrorMessage = "El maximo de Caracteres es de {1}")]
-        [MinLength(10, ErrorMessage ="El minimo de Caracteres es de {2}")]
+        [MaxLength(600, ErrorMessage = "El maximo de Caracteres es de {1}")]
+        [MinLength(10, ErrorMessage = "El minimo de Caracteres es de {2}")]
         [Column("description")]
         public string Description { get; set; }
 
         [Display(Name = "Fecha")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]
         [Column("date")]
-        public  DateTime Date { get; set; }
+        public DateTime Date { get; set; }
 
         // agrgando una lista de evendetaids 
         public virtual ICollection<JournalEntryDetailEntity> JournalEntryDetails { get; set; } = new List<JournalEntryDetailEntity>();

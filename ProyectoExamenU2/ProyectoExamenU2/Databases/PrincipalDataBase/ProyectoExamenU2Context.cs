@@ -41,11 +41,11 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase
             modelBuilder.Entity<IdentityUserToken<string>>().ToTable("users_tokens");
 
             //Aplicacion de las Configuraciones de Entidades
-            // modelBuilder.ApplyConfiguration(new ExampleConfiguration());
-            //modelBuilder.ApplyConfiguration(new AccountCatalogConfiguration());
-            //modelBuilder.ApplyConfiguration(new BalanceConfiguraction());
-            //modelBuilder.ApplyConfiguration(new JournalEntryConfiguraction());
-            //modelBuilder.ApplyConfiguration(new JournalEntryDetailConfiguraction());
+            //modelBuilder.ApplyConfiguration(new ExampleConfiguration());
+            modelBuilder.ApplyConfiguration(new AccountCatalogConfiguration());
+            modelBuilder.ApplyConfiguration(new BalanceConfiguraction());
+            modelBuilder.ApplyConfiguration(new JournalEntryConfiguraction());
+            modelBuilder.ApplyConfiguration(new JournalEntryDetailConfiguraction());
 
 
             // Set Foreign Keys OnRestrict

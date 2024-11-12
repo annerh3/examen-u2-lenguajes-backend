@@ -1,0 +1,17 @@
+﻿
+
+-- PARA REALIZA UNA NUEVA MIGRACION FORMATO
++++++ PARA EL LOG
+
+Add-Migration INITLogsDatabase -Context LogsContext -OutputDir Migrations/LogsDatabase
+
++++++ PARA EL PartidContableDatabase
+
+Add-Migration INITContableDatabase -Context ProyectoExamenU2Context -OutputDir Migrations/PrincipalDatabse
+
+
+-- Para Aplicar Migraciones
+
+update-database -Context ProyectoExamenU2Context
+
+update-database -Context LogsContext

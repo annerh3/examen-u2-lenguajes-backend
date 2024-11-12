@@ -7,7 +7,7 @@ namespace ProyectoExamenU2.Dtos.AccountCatalog
     public class AccountCreateDto
     {
         [Display(Name = "Sufijo de Cuenta")]
-        [Required(ErrorMessage = "La {0} es obligatoria.")]
+        //[Required(ErrorMessage = "La {0} es obligatoria.")]
         public string PreCode { get; set; }
 
         [Display(Name = "Codigo Primario")]
@@ -27,6 +27,6 @@ namespace ProyectoExamenU2.Dtos.AccountCatalog
         public bool AllowsMovement { get; set; }
 
         public Guid? ParentId { get; set; }
-        public virtual ICollection<AccountCatalogEntity> ChildAccounts { get; set; } = new List<AccountCatalogEntity>();
+        //public virtual ICollection<AccountCatalogEntity> ChildAccounts { get; set; } = new List<AccountCatalogEntity>();
     }
 }

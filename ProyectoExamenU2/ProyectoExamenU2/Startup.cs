@@ -1,5 +1,4 @@
-﻿using ProyectoExamenU2.Database;
-using ProyectoExamenU2.Helpers;
+﻿using ProyectoExamenU2.Helpers;
 using ProyectoExamenU2.Services.Interfaces;
 using ProyectoExamenU2.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
+using ProyectoExamenU2.Databases.PrincipalDataBase;
+using ProyectoExamenU2.Databases.LogsDataBase;
 
 namespace ProyectoExamenU2
 {
@@ -35,9 +36,15 @@ namespace ProyectoExamenU2
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore; // Esto le indica a Newtonsoft.Json que ignore las referencias cíclicas durante la serialización.
             });
 
-            //Agregando el DbContext
+            // Agregando el DbContext de la base de datos principal
             services.AddDbContext<ProyectoExamenU2Context>(options =>
-            options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(Configuration.GetConnectionString("PrincipalDatabase")));
+
+            // Agregando el DbContext de la base de datos de logs
+            services.AddDbContext<LogsContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("LogsDatabase")));
+
+            var dbName = Configuration.GetConnectionString("LogsDatabase");
 
             // Add custom services
             services.AddTransient<IAuthService, AuthService>();

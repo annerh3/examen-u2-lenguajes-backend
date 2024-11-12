@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "PartidasContables",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

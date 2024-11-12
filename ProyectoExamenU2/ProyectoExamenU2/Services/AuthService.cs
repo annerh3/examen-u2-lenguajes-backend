@@ -53,12 +53,7 @@ namespace ProyectoExamenU2.Services
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim("UserId", userEntity.Id),
                 };
-
-                var userRoles = await _userManager.GetRolesAsync(userEntity);
-                foreach (var role in userRoles)
-                {
-                    authClaims.Add(new Claim(ClaimTypes.Role, role));
-                }
+            
 
                 var jwtToken = GetToken(authClaims);
 
@@ -81,7 +76,7 @@ namespace ProyectoExamenU2.Services
             {
                 Status = false,
                 StatusCode = 401,
-                Message = "Falló el inicio de sesión"
+                Message = "Fallo al inicio de sesión"
             };
         }
 

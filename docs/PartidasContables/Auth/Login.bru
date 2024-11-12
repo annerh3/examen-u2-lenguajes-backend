@@ -1,0 +1,33 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{PATH}}/auth/login
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+body:json {
+  {
+    "email": "{{EMAIL}}",
+    "password": "{{PASSWORD}}"
+  }
+}
+
+vars:pre-request {
+  EMAIL: m_lopez@gmail.com
+  PASSWORD: Temporal01*
+}
+
+script:post-response {
+  let response = res.getBody()
+  bru.setEnvVar("TOKEN",response.data?.token ?? '')
+  
+}

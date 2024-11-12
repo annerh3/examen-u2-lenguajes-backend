@@ -2,7 +2,6 @@
 using ProyectoExamenU2.Database.Configuration;
 using ProyectoExamenU2.Database.Entities;
 using ProyectoExamenU2.Services.Interfaces;
-using ProyectoExamenU2.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -43,14 +42,12 @@ namespace ProyectoExamenU2.Database
             modelBuilder.Entity<IdentityUserToken<string>>().ToTable("users_tokens");
 
             //Aplicacion de las Configuraciones de Entidades
-            modelBuilder.ApplyConfiguration(new ExampleConfiguration());
-            modelBuilder.ApplyConfiguration(new CategoryProductConfiguration());
-            modelBuilder.ApplyConfiguration(new ClienTypeConfiguration());
-            modelBuilder.ApplyConfiguration(new EventConfiguration());
-            modelBuilder.ApplyConfiguration(new NoteConfiguraction());
-            modelBuilder.ApplyConfiguration(new ReservationConfiguration());
-            modelBuilder.ApplyConfiguration(new DetailConfiguration());
-            modelBuilder.ApplyConfiguration(new ClientConfiguration());
+           // modelBuilder.ApplyConfiguration(new ExampleConfiguration());
+            modelBuilder.ApplyConfiguration(new AccountCatalogConfiguration());
+            modelBuilder.ApplyConfiguration(new BalanceConfiguraction());
+            modelBuilder.ApplyConfiguration(new JournalEntryConfiguraction());
+            modelBuilder.ApplyConfiguration(new JournalEntryDetailConfiguraction());
+
 
             // Set Foreign Keys OnRestrict
             var eTypes = modelBuilder.Model.GetEntityTypes(); // todo el listado de entidades
@@ -66,40 +63,17 @@ namespace ProyectoExamenU2.Database
 
             // las configuraciones en decimales ahora se realizan en el archivo de Configuracion
             // fallo realizarlo alli
-            modelBuilder.Entity<ClientTypeEntity>()
-                 .Property(e => e.Discount)
+            modelBuilder.Entity<BalanceEntity>()
+                 .Property(e => e.BalanceAmount)
                  .HasPrecision(18, 2);
 
-            modelBuilder.Entity<DetailEntity>()
-                .Property(e => e.Quantity)
+            modelBuilder.Entity<JournalEntryDetailEntity>()
+                .Property(e => e.Account)
                 .HasPrecision(18, 2);
-
-            modelBuilder.Entity<EventEntity>()
-                .Property(e => e.Discount)
-                .HasPrecision(18, 2);
-
-            modelBuilder.Entity<EventEntity>()
-                .Property(e => e.EventCost)
-                .HasPrecision(18, 2);
-
-            modelBuilder.Entity<EventEntity>()
-                .Property(e => e.Total)
-                .HasPrecision(18, 2);
-
-            modelBuilder.Entity<ProductEntity>()
-                .Property(e => e.Cost)
-                .HasPrecision(18, 2);
-            modelBuilder.Entity<DetailEntity>()
-            .Property(d => d.UnitPrice)
-            .HasColumnType("decimal(18,2)");
             // Ignorar la propiedad calculada TotalPrice
-            modelBuilder.Entity<DetailEntity>()
-            .Property(d => d.TotalPrice)
-            .HasColumnType("decimal(18,2)");
-
-            modelBuilder.Entity<ReservationEntity>()
-                .Property(r => r.Count)
-                .HasColumnType("decimal(18,2)"); // Ajusta la precisión y escala según tus necesidades
+            //modelBuilder.Entity<DetailEntity>()
+            //.Property(d => d.TotalPrice)
+            //.HasColumnType("decimal(18,2)");
 
         }
 
@@ -138,15 +112,12 @@ namespace ProyectoExamenU2.Database
         }
 
         // Agregando el contexto 
+       // public DbSet<CategoryProductEntity> CategoryProducts { get; set; }
+        public DbSet<AccountCatalogEntity> AccountCatalogs { get; set; }
+        public DbSet<BalanceEntity> Balances { get; set; }
+        public DbSet<JournalEntryDetailEntity> JournalEntryDetails { get; set; }
+        public DbSet<JournalEntryEntity> JournalEntries { get; set; }
 
-        public DbSet<CategoryProductEntity> CategoryProducts { get; set; }
-        public DbSet<ClientTypeEntity> TypesOfClient { get; set; }
-        public DbSet<DetailEntity> Details { get; set; }
-        public DbSet<EventEntity> Events { get; set; }
-        public DbSet<NoteEntity> Notes { get; set; }
-        public DbSet<ProductEntity> Products { get; set; }
-        public DbSet<ReservationEntity> Reservations { get; set; }
-        public DbSet<ClientEntity> Clients { get; set; }
 
     }
 }

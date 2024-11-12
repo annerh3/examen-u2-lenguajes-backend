@@ -9,7 +9,7 @@ namespace ProyectoExamenU2.Helpers
 
         public AutoMapperProfile()
         {
-
+            MapsForAccounts();
 
         }
 

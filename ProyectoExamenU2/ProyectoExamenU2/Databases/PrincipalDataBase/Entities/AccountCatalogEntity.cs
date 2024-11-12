@@ -35,7 +35,7 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
         //[Required(ErrorMessage = "La {0} es obligatoria.")]
         [Column("parent_id")]
         public Guid? ParentId { get; set; }
-
+        [ForeignKey(nameof(ParentId))]
         // Acceder a la cuenta padre
         public virtual AccountCatalogEntity ParentAccount { get; set; }
 

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ProyectoExamenU2.Database.Entities
 {
     [Table("account_catalog", Schema = "dbo")]
-    public class AccountCatalog : BaseEntity
+    public class AccountCatalogEntity : BaseEntity
     {
         [Display(Name = "Sufijo de Cuenta")]
         //[Required(ErrorMessage = "La {0} es obligatoria.")]
@@ -34,8 +34,13 @@ namespace ProyectoExamenU2.Database.Entities
         [Display(Name = "Cuenta Padre")]
         //[Required(ErrorMessage = "La {0} es obligatoria.")]
         [Column("parent_id")]
-        public Guid ParentId { get; set; }
+        public Guid? ParentId { get; set; }
 
+        // Acceder a la cuenta padre
+        public virtual AccountCatalogEntity ParentAccount { get; set; }
+
+        // subcuentas si existen 
+        public virtual ICollection<AccountCatalogEntity> ChildAccounts { get; set; }
 
         public virtual UserEntity CreatedByUser { get; set; }
         public virtual UserEntity UpdatedByUser { get; set; }

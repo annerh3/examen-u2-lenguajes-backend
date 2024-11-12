@@ -13,7 +13,7 @@ namespace ProyectoExamenU2.Database.Entities
         [Column("journal_entry_id")]
         public Guid JournalEntryId { get; set; }
         [ForeignKey(nameof(JournalEntryId))]
-        public virtual JournalEntry JournalEntry { get; set; }
+        public virtual JournalEntryEntity JournalEntry { get; set; }
 
         [Display(Name = "Id de Cuenta")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]
@@ -21,7 +21,7 @@ namespace ProyectoExamenU2.Database.Entities
         public Guid AccountCatalogId { get; set; }
         [ForeignKey (nameof(AccountCatalogId))]
 
-        public virtual AccountCatalog Account {  get; set; }
+        public virtual AccountCatalogEntity Account {  get; set; }
 
         [Display(Name = "Monto")]
         [Required(ErrorMessage = "La {0} es obligatoria.")]

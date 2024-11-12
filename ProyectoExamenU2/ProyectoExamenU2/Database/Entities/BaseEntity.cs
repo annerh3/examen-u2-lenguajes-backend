@@ -9,10 +9,10 @@ namespace ProyectoExamenU2.Database.Entities
         [Column("id")]
         public Guid Id { get; set; }
 
-        [Display(Name = "Nombre")]
-        [Required(ErrorMessage = "El {0} de la categoria es requerido.")]
-        [Column("name")]
-        public string Name { get; set; }
+        //[Display(Name = "Nombre")]
+        //[Required(ErrorMessage = "El {0} de la categoria es requerido.")]
+        //[Column("name")]
+        //public string Name { get; set; }
 
     }
 }

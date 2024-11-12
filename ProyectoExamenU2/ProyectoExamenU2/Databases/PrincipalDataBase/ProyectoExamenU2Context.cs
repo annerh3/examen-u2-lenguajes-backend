@@ -10,12 +10,11 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase
 {
     public class ProyectoExamenU2Context : IdentityDbContext<UserEntity>
     {
-        //Variables Globales
-
         private readonly IAuditService _auditService;
+
         //Constructor de La Clase
         public ProyectoExamenU2Context(
-            DbContextOptions options,
+            DbContextOptions<ProyectoExamenU2Context> options,
             IAuditService auditService
             ) : base(options)
         {
@@ -43,10 +42,10 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase
 
             //Aplicacion de las Configuraciones de Entidades
             // modelBuilder.ApplyConfiguration(new ExampleConfiguration());
-            modelBuilder.ApplyConfiguration(new AccountCatalogConfiguration());
-            modelBuilder.ApplyConfiguration(new BalanceConfiguraction());
-            modelBuilder.ApplyConfiguration(new JournalEntryConfiguraction());
-            modelBuilder.ApplyConfiguration(new JournalEntryDetailConfiguraction());
+            //modelBuilder.ApplyConfiguration(new AccountCatalogConfiguration());
+            //modelBuilder.ApplyConfiguration(new BalanceConfiguraction());
+            //modelBuilder.ApplyConfiguration(new JournalEntryConfiguraction());
+            //modelBuilder.ApplyConfiguration(new JournalEntryDetailConfiguraction());
 
 
             // Set Foreign Keys OnRestrict
@@ -68,8 +67,9 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase
                  .HasPrecision(18, 2);
 
             modelBuilder.Entity<JournalEntryDetailEntity>()
-                .Property(e => e.Account)
+                .Property(e => e.Amount)
                 .HasPrecision(18, 2);
+
             // Ignorar la propiedad calculada TotalPrice
             //modelBuilder.Entity<DetailEntity>()
             //.Property(d => d.TotalPrice)
@@ -112,7 +112,6 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase
         }
 
         // Agregando el contexto 
-        // public DbSet<CategoryProductEntity> CategoryProducts { get; set; }
         public DbSet<AccountCatalogEntity> AccountCatalogs { get; set; }
         public DbSet<BalanceEntity> Balances { get; set; }
         public DbSet<JournalEntryDetailEntity> JournalEntryDetails { get; set; }

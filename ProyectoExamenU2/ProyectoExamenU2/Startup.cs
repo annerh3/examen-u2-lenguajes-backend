@@ -47,6 +47,7 @@ namespace ProyectoExamenU2
 
             var dbName = Configuration.GetConnectionString("LogsDatabase");
             // ============================================================================================================
+
             // Add custom services
             services.AddTransient<IAuthService, AuthService>();
             services.AddTransient<IAuditService, AuditService>();

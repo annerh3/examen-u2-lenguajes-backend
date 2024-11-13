@@ -15,5 +15,8 @@ namespace ProyectoExamenU2.Databases.LogsDataBase
         }
 
         public DbSet<LogEntity> Logs { get; set; }
+        public DbSet<LogErrorEntity> LogsErrors { get; set; }
+        public DbSet<LogDetailEntity> LogsDetails { get; set; }
+
     }
 }

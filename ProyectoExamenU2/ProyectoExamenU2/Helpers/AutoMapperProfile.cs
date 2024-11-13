@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using ProyectoExamenU2.Databases.LogsDataBase.Entities;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 using ProyectoExamenU2.Dtos.AccountCatalog;
 using ProyectoExamenU2.Dtos.Balance;
+using ProyectoExamenU2.Dtos.Logs;
 
 namespace ProyectoExamenU2.Helpers
 {
@@ -13,6 +15,17 @@ namespace ProyectoExamenU2.Helpers
             MapsForAccounts();
             MapsForVBalances();
 
+        }
+
+        private void MapsForLogas()
+        {
+            CreateMap<LogErrorEntity, LogErrorDto>();
+
+            CreateMap<LogDetailEntity, LogDetailDto>();
+            // Este trae el detalle y el Error 
+            CreateMap<LogEntity, LogDto>()
+                .ForMember(dest => dest.Detail, opt => opt.MapFrom(src => src.Detail)) 
+                .ForMember(dest => dest.Error, opt => opt.MapFrom(src => src.Error)); 
         }
 
         private void MapsForVBalances()

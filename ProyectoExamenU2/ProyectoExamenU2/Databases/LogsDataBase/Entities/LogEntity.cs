@@ -9,36 +9,33 @@ namespace ProyectoExamenU2.Databases.LogsDataBase.Entities
         [Key]
         [Column("id")]
         public int Id { get; set; }
-
         [Required]
         [Column("timestamp")]
         public DateTime Timestamp { get; set; }
-
         [Required]
         [Column("user_id")]
-        public Guid UserId { get; set; }
+        public Guid UserId { get; set; }// va tocar crear un usuario interno llamado system 
 
         [Required]
         [StringLength(50)]
         [Column("action_type")]
-        public string ActionType { get; set; }  // Tipo de acción realizada (ej. "Crear", "Modificar", "Eliminar", "Autenticación")
-
-        [Required]
-        [StringLength(100)]
-        [Column("entity_name")]
-        public string EntityName { get; set; } // Nombre de la entidad afectada (ej. "PartidaContable", "Cuenta", etc.)
-
-        [Column("entity_id")]
-        public Guid EntityId { get; set; } // ID del registro de la entidad que fue afectado
-
-        [StringLength(500)]
-        [Column("details")]
-        public string Details { get; set; } // Detalles adicionales (ej. valores antiguos y nuevos, si es una actualización)
+        public string ActionType { get; set; }  
 
         [Required]
         [StringLength(20)]
         [Column("status")]
-        public string Status { get; set; } // Estado de la acción (ej. "Éxito", "Error")
+        public string Status { get; set; }
+
+        [Column("log_detail_id")]
+        public  Guid DetailId { get; set; }
+        [ForeignKey(nameof(DetailId))]
+
+        public virtual LogDetailEntity Detail { get; set; }
+
+        [Column("log_error_id")]
+        public Guid ErrorId { get; set; }
+        [ForeignKey(nameof(ErrorId))]
+        public virtual LogErrorEntity Error { get; set; }
 
     }
 }

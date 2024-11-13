@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 using ProyectoExamenU2.Dtos.AccountCatalog;
+using ProyectoExamenU2.Dtos.Balance;
 
 namespace ProyectoExamenU2.Helpers
 {
@@ -10,9 +11,17 @@ namespace ProyectoExamenU2.Helpers
         public AutoMapperProfile()
         {
             MapsForAccounts();
+            MapsForVBalances();
 
         }
 
+        private void MapsForVBalances()
+        {
+            CreateMap<BalanceEntity, BalanceDto>()
+            .ForMember(dest => dest.AccountCatalog, opt => opt.MapFrom(src => src.AccountCatalog))
+            .ForMember(dest => dest.BalanceAmount, opt => opt.MapFrom(src => src.BalanceAmount))
+            .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date));
+        }
 
         private void MapsForAccounts()
         {

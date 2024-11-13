@@ -17,18 +17,21 @@ namespace ProyectoExamenU2.Services
         private readonly IMapper _mapper;
         private readonly ILogger<IAccountCatalogService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IBalanceService _balanceService;
 
         public AccountCatalogService(
             ProyectoExamenU2Context context,
             IMapper mapper,
             ILogger<IAccountCatalogService> logger,
-            IConfiguration configuration
+            IConfiguration configuration,
+            IBalanceService balanceService
             )
         {
             this._context = context;
             this._mapper = mapper;
             this._logger = logger ;
             this._configuration = configuration;
+            this._balanceService = balanceService;
         }
         public async Task<ResponseDto<AccountDto>> CreateAcoountAsync(AccountCreateDto dto)
         {
@@ -101,6 +104,10 @@ namespace ProyectoExamenU2.Services
             //Proceder a Crear la Cuenta
             _context.AccountCatalogs.Add(AccountEntity);
             await _context.SaveChangesAsync();
+
+            var result =  await _balanceService.CreateInitBalance(AccountEntity.Id);
+
+
 
             var AccountResult = _mapper.Map<AccountDto>(AccountEntity);
             // Respuesta

@@ -8,15 +8,13 @@ namespace ProyectoExamenU2.Dtos.AccountCatalog
     {
         public Guid Id { get; set; }
         public string PreCode { get; set; }
-
         public string Code { get; set; }
-
         public string AccountName { get; set; }
-
         public char BehaviorType { get; set; }
         public bool AllowsMovement { get; set; }
-        //public Guid? ParentId { get; set; }
-        public virtual AccountCatalogEntity ParentAccount { get; set; }
-        public virtual ICollection<AccountCatalogEntity> ChildAccounts { get; set; } = new List<AccountCatalogEntity>();
+        public bool IsActive { get; set; }
+        public AccountDto ParentAccount { get; set; }
+
+        public ICollection<ChildAccountDto> ChildAccounts { get; set; } = new List<ChildAccountDto>();
     }
 }

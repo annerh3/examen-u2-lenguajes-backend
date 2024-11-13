@@ -25,11 +25,19 @@ namespace ProyectoExamenU2.Helpers
                 .ForMember(dest => dest.ParentAccount, opt => opt.Ignore());
 
             // Mapear de AccountCatalogEntity a AccountDto para visualizar una cuenta
+            //CreateMap<AccountCatalogEntity, AccountDto>()
+            //     .ForMember(dest => dest.ParentAccount, opt => opt.MapFrom(src => src.ParentAccount))
+            //     .ForMember(dest => dest.ChildAccounts, opt => opt.MapFrom(src => src.ChildAccounts));
             CreateMap<AccountCatalogEntity, AccountDto>()
-                .ForMember(dest => dest.ParentAccount, opt => opt.MapFrom(src => src.ParentAccount)) 
+                 .ForMember(dest => dest.ParentAccount, opt => opt.MapFrom(src => src.ParentAccount))
+                 .ForMember(dest => dest.ChildAccounts, opt => opt.MapFrom(src => src.ChildAccounts));
+
+            // para hojos
+            CreateMap<AccountCatalogEntity, ChildAccountDto>()
+                .ForMember(dest => dest.FullCode, opt => opt.MapFrom(src => src.PreCode + src.Code))
                 .ForMember(dest => dest.ChildAccounts, opt => opt.MapFrom(src => src.ChildAccounts));
 
-            
+
         }
     }
 }

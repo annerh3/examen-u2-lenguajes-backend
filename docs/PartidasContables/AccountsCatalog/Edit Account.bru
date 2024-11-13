@@ -1,11 +1,11 @@
 meta {
-  name: CreateAccount
+  name: Edit Account
   type: http
-  seq: 1
+  seq: 2
 }
 
-post {
-  url: {{PATH}}/Accounts
+put {
+  url: {{PATH}}/Accounts/e0b20026-7a49-4760-e21f-08dd036a5289
   body: json
   auth: none
 }
@@ -14,8 +14,8 @@ body:json {
   {
     "preCode": "10101",
     "code": "02",
-    "accountName": "Caja General",
-    "behaviorType": "D",
+    "accountName": "Caja General122",
+    "behaviorType": "C",
     "allowsMovement": true,
     "parentId": "80805831-5620-46E9-E21D-08DD036A5289"
   }

@@ -31,6 +31,11 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
         [Column("allows_movement")]
         public bool AllowsMovement { get; set; }
 
+        [Display(Name = "Es Activa")]
+        [Required(ErrorMessage = "La {0} es obligatoria.")]
+        [Column("is_Active")]
+        public bool IsActive { get; set; }
+
         [Display(Name = "Cuenta Padre")]
         //[Required(ErrorMessage = "La {0} es obligatoria.")]
         [Column("parent_id")]
@@ -40,7 +45,7 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
         public virtual AccountCatalogEntity ParentAccount { get; set; }
 
         // subcuentas si existen 
-        public virtual ICollection<AccountCatalogEntity> ChildAccounts { get; set; }
+        public virtual ICollection<AccountCatalogEntity> ChildAccounts { get; set; } = new List<AccountCatalogEntity>();
 
         public virtual UserEntity CreatedByUser { get; set; }
         public virtual UserEntity UpdatedByUser { get; set; }

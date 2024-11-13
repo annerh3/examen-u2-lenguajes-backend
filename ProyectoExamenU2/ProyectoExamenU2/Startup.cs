@@ -49,9 +49,11 @@ namespace ProyectoExamenU2
             // ============================================================================================================
 
             // Add custom services
+            services.AddTransient<ILoggerDBService, LoggerDbService>();
             services.AddTransient<IAuthService, AuthService>();
             services.AddTransient<IAuditService, AuditService>();
             services.AddTransient<IAccountCatalogService, AccountCatalogService>();
+            services.AddTransient<IBalanceService, BalanceService>();
 
 
 

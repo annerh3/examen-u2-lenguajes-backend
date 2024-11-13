@@ -14,6 +14,8 @@
         public const string LOGIN_SUCCESS = "Sesión iniciada correctamente.";
         public const string LOGIN_ERROR = "Se produjo un error al iniciar sesión, intentelo mas tarde.";
 
+        public const string API_FATAL_ERROR = "ERROR CRITICO !! UKNOW";
+
 
         // Mensajes para el Seeder de Datos
         public const string SEEDER_INIT_ERROR = "Ocurrio Un error durante la Ejecucion del Seeder";
@@ -41,5 +43,7 @@
         public const string PreCodeMismatch = "El codigo del padre no coincide con el precodigo proporcionado.";
         // Cuanta existente 
         public const string AccountAlreadyExists = "Ya existe una cuenta con el mismo prefijo y código.";
+        public const string BehaviorTypeError = "El tipo de movimiento seleccionado no es válido";
+
     }
 }

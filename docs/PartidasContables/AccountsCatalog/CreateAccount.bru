@@ -5,7 +5,18 @@ meta {
 }
 
 post {
-  url: 
-  body: none
+  url: {{PATH}}/Accounts
+  body: json
   auth: none
+}
+
+body:json {
+  {
+    "preCode": "102",
+    "code": "10",
+    "accountName":"Despacito Proyecto",
+    "behaviorType": "D",
+    "allowsMovement": true,
+    "parentId": "efb050ef-97f7-4dfd-c389-08dd03ab77b5"
+  }
 }

@@ -26,6 +26,12 @@ namespace ProyectoExamenU2.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-      
+        [HttpPost("refresh-token")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ResponseDto<LoginResponseDto>>> GetToken(RefreshTokenDto dto)
+        {
+            var response = await _authService.RefreshTokenAsync(dto);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

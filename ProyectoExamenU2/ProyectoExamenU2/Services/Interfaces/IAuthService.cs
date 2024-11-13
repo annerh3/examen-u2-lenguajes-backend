@@ -6,6 +6,6 @@ namespace ProyectoExamenU2.Services.Interfaces
     public interface IAuthService
     {
         Task<ResponseDto<LoginResponseDto>> LoginAsync(LoginDto dto);
-
+        Task<ResponseDto<LoginResponseDto>> RefreshTokenAsync(RefreshTokenDto dto);
     }
 }

@@ -1,11 +1,11 @@
 meta {
-  name: Login
+  name: RefreshToken
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
-  url: {{PATH}}/auth/login
+  url: {{PATH}}/auth/refresh-token
   body: json
   auth: bearer
 }
@@ -16,14 +16,9 @@ auth:bearer {
 
 body:json {
   {
-    "email": "{{EMAIL}}",
-    "password": "{{PASSWORD}}"
+    "token": "{{TOKEN}}",
+    "refreshToken": "{{REFRESH_TOKEN}}"
   }
-}
-
-vars:pre-request {
-  EMAIL: s_hqz2@gmail.com
-  PASSWORD: Temporal01*
 }
 
 script:post-response {

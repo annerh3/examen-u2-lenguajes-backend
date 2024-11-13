@@ -7,18 +7,8 @@ namespace ProyectoExamenU2.Databases.PrincipalDataBase.Entities
     public class UserEntity : IdentityUser
     {
         public string Name { get; set; }
-        //[StringLength(70, MinimumLength = 3)]
-        //[Column("first_name")]
-        //[Required]
-        //public string FirstName { get; set; }
-
-        //[StringLength(70, MinimumLength = 3)]
-        //[Column("last_name")]
-        //[Required]
-        //public string LastName { get; set; }
         [Column("refresh_token")]
         [StringLength(450)]
-
         public string RefreshToken { get; set; }
 
 

@@ -8,5 +8,7 @@ namespace ProyectoExamenU2.Services.Interfaces
     {
         Task<ResponseDto<BalanceDto>> CreateInitBalance(Guid id);
 
+        Task<ResponseDto<BalanceDto>> updateBalance(BalanceDto balance);
+
     }
 }

@@ -6,7 +6,7 @@ namespace ProyectoExamenU2.Dtos.Logs
 {
     public class LogDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public DateTime Timestamp { get; set; }
         public Guid UserId { get; set; }// va tocar crear un usuario interno llamado system 
         public string ActionType { get; set; }

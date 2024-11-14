@@ -13,6 +13,11 @@ namespace ProyectoExamenU2.Databases.LogsDataBase.Entities
 
         [Column("stack_trace")]
         public string StackTrace { get; set; }
+
+
+        [Column("target_site")]
+        public string TargetSite { get; set; }
+
         [Column("time_stamp")]
         public DateTime TimeStamp { get; set; }
     }

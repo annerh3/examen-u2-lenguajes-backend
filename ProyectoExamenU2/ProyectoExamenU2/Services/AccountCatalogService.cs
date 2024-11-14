@@ -103,6 +103,9 @@ namespace ProyectoExamenU2.Services
                     ? await _context.AccountCatalogs.FirstOrDefaultAsync(a => a.Id == dto.ParentId.Value)
                     : null;
 
+
+
+
                 if (accountEntity.ParentId.HasValue)
                 {
                     if (parentAccount == null)
@@ -169,6 +172,15 @@ namespace ProyectoExamenU2.Services
                     await _loggerDB.LogCreateLog(logDetailParentChild, logParentChild);
 
                 }
+                if(parentAccount == null && accountEntity.PreCode != null || accountEntity.PreCode  != "")
+                {
+                    //Mandar Log
+                    await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA} -> Father ??? and Pre code?? ");
+                    return ResponseHelper.ResponseError<AccountDto>(
+                        CodesConstant.BAD_REQUEST,
+                        $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.PreCodeMismatch}: Parent = {null} ?? , Account-PreCode {dto.PreCode} ??");
+                }
+
 
                 // Proceder a crear la cuenta
                 _context.AccountCatalogs.Add(accountEntity);
@@ -302,6 +314,7 @@ namespace ProyectoExamenU2.Services
                         ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
                         ErrorMessage = e.Message,
                         StackTrace = e.StackTrace,
+                        TargetSite =  e.TargetSite.ToString(),
                     };
 
                     await _loggerDB.LogError(logId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);

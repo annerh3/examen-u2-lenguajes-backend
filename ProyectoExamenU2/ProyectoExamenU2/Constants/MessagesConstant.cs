@@ -45,5 +45,15 @@
         public const string AccountAlreadyExists = "Ya existe una cuenta con el mismo prefijo y código.";
         public const string BehaviorTypeError = "El tipo de movimiento seleccionado no es válido";
 
+
+
+        // Tipos de TRANSACCIONES
+
+        public const string CREATE = "CREATION";
+        public const string UPDATE = "UPDATE";
+        public const string DELETE = "DELETION";
+        public const string GET    = "GET PETITION";
+
+
     }
 }

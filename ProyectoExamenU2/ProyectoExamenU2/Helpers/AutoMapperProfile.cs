@@ -14,18 +14,27 @@ namespace ProyectoExamenU2.Helpers
         {
             MapsForAccounts();
             MapsForVBalances();
-
+            MapsForLogas();
         }
 
         private void MapsForLogas()
         {
+            //Logs
+            CreateMap<LogCreateDto, LogEntity>();
+
             CreateMap<LogErrorEntity, LogErrorDto>();
 
+            CreateMap<LogErrorCreateDto, LogErrorEntity>();
+            CreateMap<LogDetailCreateDto, LogDetailEntity>();
+
+            // Detalles
+            CreateMap<LogDetailDto, LogDetailEntity>();
             CreateMap<LogDetailEntity, LogDetailDto>();
-            // Este trae el detalle y el Error 
+
+            // entidad a Dto
             CreateMap<LogEntity, LogDto>()
-                .ForMember(dest => dest.Detail, opt => opt.MapFrom(src => src.Detail)) 
-                .ForMember(dest => dest.Error, opt => opt.MapFrom(src => src.Error)); 
+                .ForMember(dest => dest.Detail, opt => opt.MapFrom(src => src.Detail))
+                .ForMember(dest => dest.Error, opt => opt.MapFrom(src => src.Error));
         }
 
         private void MapsForVBalances()

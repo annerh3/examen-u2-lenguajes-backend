@@ -10,7 +10,8 @@ namespace ProyectoExamenU2.Dtos.Logs
         public DateTime Timestamp { get; set; }
         public Guid UserId { get; set; }// va tocar crear un usuario interno llamado system 
         public string ActionType { get; set; }
-        public string Status { get; set; }
+        public string Message { get; set; }
+        public int Status { get; set; }
         public  LogDetailDto Detail { get; set; }
         public LogErrorDto Error { get; set; }
     }

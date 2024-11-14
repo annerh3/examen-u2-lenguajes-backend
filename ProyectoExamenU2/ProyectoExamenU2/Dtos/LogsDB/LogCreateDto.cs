@@ -8,8 +8,9 @@ namespace ProyectoExamenU2.Dtos.Logs
     {
         public Guid UserId { get; set; }// va tocar crear un usuario interno llamado system 
         public string ActionType { get; set; }
-        public string Status { get; set; }
-        public LogDetailCreateDto Detail { get; set; }
-        public virtual LogErrorCreateDto Error { get; set; }
+        public int Status { get; set; }
+        public string Message { get; set; }
+        public Guid DetailId { get; set; }
+        public Guid? ErrorId { get; set; }
     }
 }

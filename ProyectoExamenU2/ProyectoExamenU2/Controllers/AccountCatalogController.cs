@@ -22,7 +22,6 @@ namespace ProyectoExamenU2.Controllers
         [HttpPost]
         public async Task<ActionResult> CreateAccount(AccountCreateDto dto)
         {
-
             var response = await _accountCatalogService.CreateAcoountAsync(dto);
             return StatusCode(Response.StatusCode, response);
         }

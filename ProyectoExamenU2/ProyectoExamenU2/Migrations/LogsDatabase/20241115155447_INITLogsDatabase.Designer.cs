@@ -12,7 +12,7 @@ using ProyectoExamenU2.Databases.LogsDataBase;
 namespace ProyectoExamenU2.Migrations.LogsDatabase
 {
     [DbContext(typeof(LogsContext))]
-    [Migration("20241115060435_INITLogsDatabase")]
+    [Migration("20241115155447_INITLogsDatabase")]
     partial class INITLogsDatabase
     {
         /// <inheritdoc />

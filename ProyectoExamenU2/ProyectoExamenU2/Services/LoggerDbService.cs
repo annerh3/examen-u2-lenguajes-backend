@@ -5,6 +5,7 @@ using ProyectoExamenU2.Constants;
 using ProyectoExamenU2.Databases.LogsDataBase;
 using ProyectoExamenU2.Databases.LogsDataBase.Entities;
 using ProyectoExamenU2.Databases.PrincipalDataBase;
+using ProyectoExamenU2.Dtos.Balance;
 using ProyectoExamenU2.Dtos.Common;
 using ProyectoExamenU2.Dtos.Logs;
 using ProyectoExamenU2.Helpers;
@@ -159,6 +160,7 @@ namespace ProyectoExamenU2.Services
         public async Task LogStateUpdate(int state, Guid id , string message)
         {
             var logEntity = await _context.Logs.FindAsync(id);
+            if (logEntity is null)  ResponseHelper.ResponseError<Task>(CodesConstant.NOT_FOUND, "Log no encontrado.");
             logEntity.Status= state;
             logEntity.Message= message;
 

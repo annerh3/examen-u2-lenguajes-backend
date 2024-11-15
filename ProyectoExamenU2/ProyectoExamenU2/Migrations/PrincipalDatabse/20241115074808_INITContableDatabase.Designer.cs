@@ -12,7 +12,7 @@ using ProyectoExamenU2.Databases.PrincipalDataBase;
 namespace ProyectoExamenU2.Migrations.PrincipalDatabse
 {
     [DbContext(typeof(ProyectoExamenU2Context))]
-    [Migration("20241115060449_INITContableDatabase")]
+    [Migration("20241115074808_INITContableDatabase")]
     partial class INITContableDatabase
     {
         /// <inheritdoc />

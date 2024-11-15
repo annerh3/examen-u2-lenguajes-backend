@@ -390,79 +390,152 @@ namespace ProyectoExamenU2.Services
 
         public async Task<ResponseDto<PaginationDto<List<JournalDto>>>> GetProductsListAsync(searchJournalDto searchJournalDto)
         {
-            var page = searchJournalDto.Page;
-            var accountsId = searchJournalDto.Guids;
-            var searchTerm = searchJournalDto.SearchTerm;
+            Guid logId = Guid.Empty;
+            // Guid userID = new Guid(_auditService.GetUserId());
+            var userID = Guid.NewGuid();
 
 
-            const int PAGE_SIZE = 10;
-            int startIndex = (page - 1) * PAGE_SIZE;
-
-            // Consulta Base patra la Bd
-            IQueryable<JournalEntryEntity> journalQuery = _context.JournalEntries
-                .Include(journal => journal.JournalEntryDetails) // incluye los detalles
-                .ThenInclude(ditail => ditail.Account)        // Incluye las ctas de los detalles
-                .AsQueryable();
-
-            // Aplicando el Filtro por cuentas si existe 
-            if (accountsId != null && accountsId.Any())
+            // Creacion del Detalle
+            var logDetail = new LogDetailDto
             {
-                // todas las partidas que contengan alguna de los id mandados de cuentas
-                //el journal  donde se tiene almenos accounts en la columna de cuentas de catalogo 
-                journalQuery = journalQuery.Where(journal => accountsId.All(id  => journal.JournalEntryDetails.Any(d => d.AccountCatalogId == id)));
-            }
-
-
-            // busqueda 
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                journalQuery = journalQuery.Where(j =>
-                    j.Description.ToLower().Contains(searchTerm.ToLower()) || j.JournalEntryDetails.Any(d => d.Account.AccountName.ToLower().Contains(searchTerm.ToLower())));
-            }
-
-            int totalItems = await journalQuery.CountAsync();
-            int totalPages = (int)Math.Ceiling((double)totalItems / PAGE_SIZE);
-            var journals = await journalQuery
-                .OrderBy(j => j.Date)
-                .Skip(startIndex)
-                .Take(PAGE_SIZE)
-                .ToListAsync();
-
-            // Mapeo a DTO
-            var journalDtos = journals.Select(journal => new JournalDto
-            {
-                Id = journal.Id,
-                EntryNumber = journal.EntryNumber,
-                Description = journal.Description,
-                Date = journal.Date,
-                JournalEntryDetails = journal.JournalEntryDetails.Select(detail => new JournalEntryDetailDto
-                {
-                    Id = detail.Id,
-                    JournalEntryId = detail.JournalEntryId,
-                    AccountCatalogId = detail.AccountCatalogId,
-                    Account = detail.Account,
-                    Amount = detail.Amount,
-                    EntryType = detail.EntryType
-                }).ToList()
-            }).ToList();
-
-            // respuesta
-            return new ResponseDto<PaginationDto<List<JournalDto>>>
-            {
-                StatusCode = 200,
-                Status = true,
-                Message = "Listado de partidas obtenido correctamente",
-                Data = new PaginationDto<List<JournalDto>>
-                {
-                    CurrentPage = page,
-                    PageSize = PAGE_SIZE,
-                    TotalItems = totalItems,
-                    TotalPages = totalPages,
-                    Items = journalDtos,
-                    HasPreviousPage = page > 1,
-                    HasNextPage = page < totalPages
-                }
+                Id = Guid.NewGuid(),
+                EntityTableName = TablesConstant.JOURNAL_ENTRY,
+                EntityRowId = Guid.Empty,
+                ChangeType = MessagesConstant.GET,
+                OldValues = null,
+                NewValues = JsonSerializer.Serialize(searchJournalDto)
             };
+
+            //si no esta authenticado
+            if (userID == Guid.Empty)
+            {
+                var logExeption = new LogCreateDto
+                {
+                    UserId = userID,
+                    ActionType = AcctionsConstants.DATA_GET,
+                    Status = CodesConstant.UNAUTHORIZED,
+                    Message = $"{LogsMessagesConstant.NO_AUTHENTICATION}",
+                    DetailId = logDetail.Id,
+                    ErrorId = null,
+                };
+
+                logId = await _loggerDB.LogCreateLog(logDetail, logExeption);
+
+                return ResponseHelper.ResponseError<PaginationDto<List<JournalDto>>>(
+                      CodesConstant.BAD_REQUEST,
+                      $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.UNAUTHENTICATED_USER_ERROR}");
+            }
+
+            // Creando el log
+            var log = new LogCreateDto
+            {
+                UserId = userID,
+                ActionType = AcctionsConstants.DATA_GET,
+                Status = CodesConstant.PENDING,
+                Message = $"{LogsMessagesConstant.PENDING}",
+                DetailId = logDetail.Id,
+                ErrorId = null,
+            };
+
+
+            logId = await _loggerDB.LogCreateLog(logDetail, log);
+
+            try
+            {
+
+                var page = searchJournalDto.Page;
+                var accountsId = searchJournalDto.Guids;
+                var searchTerm = searchJournalDto.SearchTerm;
+
+
+                const int PAGE_SIZE = 10;
+                int startIndex = (page - 1) * PAGE_SIZE;
+
+                // Consulta Base patra la Bd
+                IQueryable<JournalEntryEntity> journalQuery = _context.JournalEntries
+                    .Include(journal => journal.JournalEntryDetails) // incluye los detalles
+                    .ThenInclude(ditail => ditail.Account)        // Incluye las ctas de los detalles
+                    .AsQueryable();
+
+                // Aplicando el Filtro por cuentas si existe 
+                if (accountsId != null && accountsId.Any())
+                {
+                    // todas las partidas que contengan alguna de los id mandados de cuentas
+                    //el journal  donde se tiene almenos accounts en la columna de cuentas de catalogo 
+                    journalQuery = journalQuery.Where(journal => accountsId.All(id => journal.JournalEntryDetails.Any(d => d.AccountCatalogId == id)));
+                }
+
+
+                // busqueda 
+                if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    journalQuery = journalQuery.Where(j =>
+                        j.Description.ToLower().Contains(searchTerm.ToLower()) || j.JournalEntryDetails.Any(d => d.Account.AccountName.ToLower().Contains(searchTerm.ToLower())));
+                }
+
+                int totalItems = await journalQuery.CountAsync();
+                int totalPages = (int)Math.Ceiling((double)totalItems / PAGE_SIZE);
+                var journals = await journalQuery
+                    .OrderBy(j => j.Date)
+                    .Skip(startIndex)
+                    .Take(PAGE_SIZE)
+                    .ToListAsync();
+
+                // Mapeo a DTO
+                var journalDtos = journals.Select(journal => new JournalDto
+                {
+                    Id = journal.Id,
+                    EntryNumber = journal.EntryNumber,
+                    Description = journal.Description,
+                    Date = journal.Date,
+                    JournalEntryDetails = journal.JournalEntryDetails.Select(detail => new JournalEntryDetailDto
+                    {
+                        Id = detail.Id,
+                        JournalEntryId = detail.JournalEntryId,
+                        AccountCatalogId = detail.AccountCatalogId,
+                        Account = detail.Account,
+                        Amount = detail.Amount,
+                        EntryType = detail.EntryType
+                    }).ToList()
+                }).ToList();
+
+                var result = new ResponseDto<PaginationDto<List<JournalDto>>>
+                {
+                    StatusCode = 200,
+                    Status = true,
+                    Message = "Listado de partidas obtenido correctamente",
+                    Data = new PaginationDto<List<JournalDto>>
+                    {
+                        CurrentPage = page,
+                        PageSize = PAGE_SIZE,
+                        TotalItems = totalItems,
+                        TotalPages = totalPages,
+                        Items = journalDtos,
+                        HasPreviousPage = page > 1,
+                        HasNextPage = page < totalPages
+                    }
+                };
+                logDetail.NewValues = JsonSerializer.Serialize(result);
+                await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.OK, LogsMessagesConstant.COMPLETED_SUCCESS);
+                // respuesta
+                return result;
+            }catch(Exception ex)
+            {
+                var logError = new LogErrorCreateDto
+                {
+                    ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
+                    ErrorMessage = ex.Message,
+                    StackTrace = ex.StackTrace,
+                    TargetSite = ex.TargetSite.ToString(),
+                };
+
+                await _loggerDB.LogError(logId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);
+
+                _logger.LogError(ex, "Error al Invocar la lista de Partidas");
+                return ResponseHelper.ResponseError<PaginationDto<List<JournalDto>>>(
+                    CodesConstant.INTERNAL_SERVER_ERROR,
+                    $"{MessagesConstant.UPDATE_ERROR} => {MessagesConstant.API_FATAL_ERROR} :: {ex.Message} {ex.TargetSite} ");
+            }
         }
     }
 }

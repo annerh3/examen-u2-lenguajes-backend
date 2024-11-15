@@ -325,8 +325,8 @@ namespace ProyectoExamenU2.Services
                             _context.JournalEntryDetails.Add(detailEntryEntity);
                             await _context.SaveChangesAsync();
                             logDetailEntry.EntityRowId = detailEntryEntity.Id;
-                            await _loggerDB.UpdateLogDetails(logDetailBalance, logEntrId, CodesConstant.OK, MessagesConstant.UPDATE_SUCCESS);
-                            await _loggerDB.UpdateLogDetails(logDetailEntry, logEntryDetailId, CodesConstant.OK, MessagesConstant.CREATE_SUCCESS);
+                            await _loggerDB.UpdateLogDetails(logDetailBalance, logEntrId, CodesConstant.OK, LogsMessagesConstant.UPDATE_SUCCESS);
+                            await _loggerDB.UpdateLogDetails(logDetailEntry, logEntryDetailId, CodesConstant.OK, LogsMessagesConstant.COMPLETED_SUCCESS);
 
                         }
                         catch (Exception ex) {
@@ -352,7 +352,7 @@ namespace ProyectoExamenU2.Services
 
                     var entity = _mapper.Map<JournalDto>(EntryEntity); 
 
-                    await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.CREATED, $"{MessagesConstant.CREATE_SUCCESS}");
+                    await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.CREATED, $"{LogsMessagesConstant.COMPLETED_SUCCESS}");
 
                     return ResponseHelper.ResponseSuccess<JournalDto>(CodesConstant.OK, MessagesConstant.CREATE_SUCCESS, entity);
 

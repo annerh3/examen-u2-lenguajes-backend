@@ -12,8 +12,8 @@ using ProyectoExamenU2.Databases.LogsDataBase;
 namespace ProyectoExamenU2.Migrations.LogsDatabase
 {
     [DbContext(typeof(LogsContext))]
-    [Migration("20241114051114_UpdateErrorNuneableLogsDatabase")]
-    partial class UpdateErrorNuneableLogsDatabase
+    [Migration("20241115060435_INITLogsDatabase")]
+    partial class INITLogsDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -36,7 +36,8 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("change_type");
 
-                    b.Property<Guid>("EntityRowId")
+                    b.Property<Guid?>("EntityRowId")
+                        .IsRequired()
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("row_id");
 
@@ -79,6 +80,10 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("log_error_id");
 
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("message");
+
                     b.Property<int>("Status")
                         .HasMaxLength(20)
                         .HasColumnType("int")
@@ -119,6 +124,10 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                     b.Property<string>("StackTrace")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("stack_trace");
+
+                    b.Property<string>("TargetSite")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("target_site");
 
                     b.Property<DateTime>("TimeStamp")
                         .HasColumnType("datetime2")

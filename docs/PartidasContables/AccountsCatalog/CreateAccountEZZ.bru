@@ -1,0 +1,31 @@
+meta {
+  name: CreateAccountEZZ
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{PATH}}/Accounts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "preCode": "{{PRE_CODE}}",
+    "code": "{{CODE}}",
+    "accountName":"{{ACCOUNT_NAME}}",
+    "behaviorType": "{{BEHAVIOR_TYPE}}",
+    "allowsMovement": true,
+    "parentId": "{{PARENT_ID}}"
+  }
+}
+
+vars:pre-request {
+  PRE_CODE: null
+  CODE: 01
+  ACCOUNT_NAME: Activo
+  BEHAVIOR_TYPE: D
+  ALLOWS_MOVEMENT: true
+  PARENT_ID: null
+}

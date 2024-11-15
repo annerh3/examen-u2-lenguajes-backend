@@ -33,7 +33,8 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("change_type");
 
-                    b.Property<Guid>("EntityRowId")
+                    b.Property<Guid?>("EntityRowId")
+                        .IsRequired()
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("row_id");
 
@@ -120,6 +121,10 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                     b.Property<string>("StackTrace")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("stack_trace");
+
+                    b.Property<string>("TargetSite")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("target_site");
 
                     b.Property<DateTime>("TimeStamp")
                         .HasColumnType("datetime2")

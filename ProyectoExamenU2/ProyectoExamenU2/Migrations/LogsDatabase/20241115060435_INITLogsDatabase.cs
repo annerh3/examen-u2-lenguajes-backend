@@ -38,6 +38,7 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                     error_code = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     error_message = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     stack_trace = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    target_site = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     time_stamp = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -55,8 +56,9 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                     user_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     action_type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     status = table.Column<int>(type: "int", maxLength: 20, nullable: false),
+                    message = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     log_detail_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    log_error_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    log_error_id = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -71,8 +73,7 @@ namespace ProyectoExamenU2.Migrations.LogsDatabase
                         name: "FK_logs_LogsErrors_log_error_id",
                         column: x => x.log_error_id,
                         principalTable: "LogsErrors",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateIndex(

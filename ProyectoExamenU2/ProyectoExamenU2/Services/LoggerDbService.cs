@@ -187,24 +187,5 @@ namespace ProyectoExamenU2.Services
    
         }
 
-        public Task<IEnumerable<LogDto>> GetLogsAsync(DateTime fromDate, DateTime toDate, Guid userId, string actionType)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task LogCreateActionAsync(LogCreateDto dto)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task LogCreateErrorAsync(Guid userId, string errorMessage, string stackTrace, Guid LogEntityId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task LogEntityChangeAsync(Guid userId, string entityName, Guid entityId, string changeType, string oldValues, string newValues)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

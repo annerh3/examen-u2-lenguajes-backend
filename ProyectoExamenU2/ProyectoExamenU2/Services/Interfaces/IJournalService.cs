@@ -5,6 +5,6 @@ namespace ProyectoExamenU2.Services.Interfaces
 {
     public interface IJournalService
     {
-        Task<ResponseDto<JournalDto>> CreateEvent(JournalEntryCreateDto dto);
+        Task<ResponseDto<JournalDto>> CreateJournalEntry(JournalEntryCreateDto dto);
     }
 }

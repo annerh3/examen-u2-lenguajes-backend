@@ -207,6 +207,7 @@ namespace ProyectoExamenU2.Services
                     ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
                     ErrorMessage = ex.Message,
                     StackTrace = ex.StackTrace,
+                    TargetSite = ex.TargetSite.ToString(),
                 };
 
                 await _loggerDB.LogError(logId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);

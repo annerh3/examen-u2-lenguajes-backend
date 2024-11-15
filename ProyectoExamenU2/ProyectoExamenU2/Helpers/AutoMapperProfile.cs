@@ -1,8 +1,11 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ProyectoExamenU2.Databases.LogsDataBase.Entities;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 using ProyectoExamenU2.Dtos.AccountCatalog;
 using ProyectoExamenU2.Dtos.Balance;
+using ProyectoExamenU2.Dtos.Journal;
+using ProyectoExamenU2.Dtos.Journal.DtosHelper;
 using ProyectoExamenU2.Dtos.Logs;
 
 namespace ProyectoExamenU2.Helpers
@@ -15,8 +18,23 @@ namespace ProyectoExamenU2.Helpers
             MapsForAccounts();
             MapsForVBalances();
             MapsForLogas();
+            MapsForJournalEntrys();
         }
+        private void MapsForJournalEntrys()
+        {
+            //CreateMap<JournalEntryEntity, JournalDto>()
+            //    .ForMember(dest => dest.JournalEntryDetails , opt => opt.Ignore());
+            CreateMap<JournalEntryCreateDto , JournalEntryEntity>();
+            CreateMap<JournalEntryDetailDto , JournalEntryDetailEntity>();
+            CreateMap<AccountEntry, JournalEntryDetailEntity>();
+            CreateMap<JournalEntryEntity, JournalDto>()
+                .ForMember(dest => dest.JournalEntryDetails, opt => opt.MapFrom(src => src.JournalEntryDetails));
+                //.ForMember(dest => dest., opt => opt.Ignore())
+                //.ForMember(dest => dest.UpdatedByUser, opt => opt.Ignore());
+            CreateMap<JournalEntryDetailEntity, JournalEntryDetailDto>();
 
+
+        }
         private void MapsForLogas()
         {
             //Logs

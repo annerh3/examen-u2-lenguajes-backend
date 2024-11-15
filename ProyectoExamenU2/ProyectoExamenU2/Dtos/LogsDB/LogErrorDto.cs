@@ -9,5 +9,7 @@ namespace ProyectoExamenU2.Dtos.Logs
         public string ErrorMessage { get; set; }
         public string StackTrace { get; set; }
         public DateTime TimeStamp { get; set; }
+
+        public string TargetSite { get; set; }
     }
 }

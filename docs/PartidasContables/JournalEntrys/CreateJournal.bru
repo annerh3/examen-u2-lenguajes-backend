@@ -1,0 +1,30 @@
+meta {
+  name: CreateJournal
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{PATH}}/journal-entry
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "description": "Pago de   Prestamos",
+    "date": "2024-11-14T23:23:13.696Z",
+    "accountsEntrys": [
+      {
+        "accountId": "5B1253B3-CBF7-41C1-54B7-08DD047D89E2",
+        "amount": 1000,
+        "muvType": "C"
+      },
+      {
+        "accountId": "A2CB1044-EB35-4180-3B87-08DD046A3631",
+        "amount": 1000,
+        "muvType": "D"
+      }
+    ]
+  }
+}

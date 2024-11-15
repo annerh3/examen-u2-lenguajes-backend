@@ -54,6 +54,7 @@ namespace ProyectoExamenU2
             services.AddTransient<IAuditService, AuditService>();
             services.AddTransient<IAccountCatalogService, AccountCatalogService>();
             services.AddTransient<IBalanceService, BalanceService>();
+            services.AddTransient<IJournalService, JournalService>();
 
 
 

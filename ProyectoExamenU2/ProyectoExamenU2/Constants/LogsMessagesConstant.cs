@@ -12,5 +12,13 @@
         public const string UPDATE_SUCCESS = "[COMPLETADO] => Actualización realizada correctamente.";
         public const string DELETE_SUCCESS = "[COMPLETADO] => Eliminación realizada correctamente.";
         public const string DATABASE_ERROR = "[ERROR] => Error en la base de datos.";
+
+        // validaciones
+        public const string FUTURE_DATE_ERROR = " DATE => DATE ERROR>> DATE CANT BE FUTURE DATE";
+        public const string BEBIAROR_ERROR = " MOVETYPE => ERROR>> MOVE TYPE IS BOCKED";
+        public const string ACTIVE_ACCOUNT_ERROR = " ACCOUNT => ERROR>> ACCOUNT IS INACTIVE";
+        public const string AMOUNT_ERROR = " AMOUNT => ERROR>> Fatal Transaccion: Monto es menor al de la cuenta ";
+
+        public const string INSUFFICIENT_FUNDS_ERROR = "Error de Fondos: La cuenta no tiene fondos suficientes para realizar esta transacción.";
     }
 }

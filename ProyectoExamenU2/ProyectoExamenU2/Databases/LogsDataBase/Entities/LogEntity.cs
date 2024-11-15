@@ -8,7 +8,7 @@ namespace ProyectoExamenU2.Databases.LogsDataBase.Entities
     {
         [Key]
         [Column("id")]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         [Required]
         [Column("timestamp")]
         public DateTime Timestamp { get; set; }
@@ -24,7 +24,10 @@ namespace ProyectoExamenU2.Databases.LogsDataBase.Entities
         [Required]
         [StringLength(20)]
         [Column("status")]
-        public string Status { get; set; }
+        public int Status { get; set; }
+
+        [Column("message")]
+        public string Message { get; set; }
 
         [Column("log_detail_id")]
         public  Guid DetailId { get; set; }
@@ -33,7 +36,7 @@ namespace ProyectoExamenU2.Databases.LogsDataBase.Entities
         public virtual LogDetailEntity Detail { get; set; }
 
         [Column("log_error_id")]
-        public Guid ErrorId { get; set; }
+        public Guid? ErrorId { get; set; }
         [ForeignKey(nameof(ErrorId))]
         public virtual LogErrorEntity Error { get; set; }
 

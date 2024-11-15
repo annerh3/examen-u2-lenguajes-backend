@@ -7,7 +7,7 @@ namespace ProyectoExamenU2.Databases.LogsDataBase.Entities
     {
         [Required]
         [Column("id")]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         [Required]
         [Column ("tableAfected")]
@@ -15,7 +15,7 @@ namespace ProyectoExamenU2.Databases.LogsDataBase.Entities
 
         [Column("row_id")]
         [Required]
-        public Guid EntityRowId { get; set; }
+        public Guid? EntityRowId { get; set; }
         [Column("change_type")]
         public string ChangeType { get; set; }
 

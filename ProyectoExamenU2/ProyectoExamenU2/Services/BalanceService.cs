@@ -8,6 +8,7 @@ using ProyectoExamenU2.Dtos.Common;
 using ProyectoExamenU2.Dtos.Logs;
 using ProyectoExamenU2.Helpers;
 using ProyectoExamenU2.Services.Interfaces;
+using System.Text.Json;
 
 namespace ProyectoExamenU2.Services
 {
@@ -42,9 +43,41 @@ namespace ProyectoExamenU2.Services
 
         public async Task<ResponseDto<BalanceDto>> CreateInitBalance(Guid id)
         {
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            Guid idPrueba = Guid.NewGuid();
+            Guid logId = Guid.Empty;
+            var status = 0;
+            var message = "";
+            // Creacion del Detalle
+            var logDetail = new LogDetailDto
             {
-                try
+                Id = Guid.NewGuid(),  
+                EntityTableName = TablesConstant.BALANCES,
+                EntityRowId = Guid.Empty,
+                ChangeType = MessagesConstant.CREATE,
+                OldValues = null,
+                NewValues = JsonSerializer.Serialize(new { AccountCatalogId = id, BalanceAmount = 0, Date = DateTime.UtcNow })
+            };
+
+            // Creando el log
+            var log = new LogCreateDto
+            {
+                UserId = idPrueba,  
+                ActionType = AcctionsConstants.DATA_CREATED,
+                Status = CodesConstant.PENDING,
+                Message = $"{LogsMessagesConstant.PENDING}",
+                DetailId = logDetail.Id,  
+                ErrorId = null,
+            };
+
+
+            logId = await _loggerDB.LogCreateLog(logDetail, log);
+            //await _loggerDB.LogCreateActionAsync(log);
+            try
+            {
+                // Guardar el log inicial 
+               
+                // transaccion
+                using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
                     var existingBalance = await _context.Balances.FirstOrDefaultAsync(b => b.AccountCatalogId == id);
 
@@ -60,20 +93,12 @@ namespace ProyectoExamenU2.Services
                         _context.Balances.Add(newBalance);
                         await _context.SaveChangesAsync();
 
-                        // Log de la transaccion
-                        // se tiene que crear el log de cambios 
-                        var UserId = new Guid (_auditService.GetUserId());
-                        var log = new LogCreateDto
-                        {
-                            UserId = UserId,
-                            ActionType = null,
-                            Status = null,
-                            Detail = null,
-                            Error =null,
-    };
-                        await _loggerDB.LogCreateActionAsync(log);
+                        // Actualizacion de los elementos de Log 
+                        logDetail.EntityRowId = newBalance.Id;
+                        status = CodesConstant.CREATED;
+                        message = $"{LogsMessagesConstant.COMPLETED_SUCCESS}";
 
-                        // Confirma la transacción solo si todo ha sido exitoso
+                        await _loggerDB.UpdateLogDetails(logDetail,logId,status , message);
                         await transaction.CommitAsync();
 
                         var balanceDto = _mapper.Map<BalanceDto>(newBalance);
@@ -83,25 +108,37 @@ namespace ProyectoExamenU2.Services
                     }
 
                     var entityBalance = _mapper.Map<BalanceDto>(existingBalance);
+                    status = CodesConstant.CONFLICT;
+                    message = $"{LogsMessagesConstant.RECORD_ALREADY_EXISTS}";
 
-                    // Si no se necesita crear un nuevo balance, de todos modos se confirma la transacción.
-                    await transaction.CommitAsync();
+                    await _loggerDB.UpdateLogDetails(logDetail, logId, status, message);
 
                     return ResponseHelper.ResponseSuccess(
                         CodesConstant.OK, "El balance ya existe", entityBalance
                     );
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                // Actualizando el LOG MEDIANTE LOS Errores , agregando tambien la StacTrace
+                status = CodesConstant.INTERNAL_SERVER_ERROR;
+                message = $"{LogsMessagesConstant.API_ERROR}";
+                var logError = new LogErrorCreateDto
                 {
-                    // Si ocurre un error, se hace rollback de la transacción
-                    await transaction.RollbackAsync();
-                    _logger.LogError($"Error al crear el balance inicial para el ID {id}: {ex.Message}");
-                    return ResponseHelper.ResponseError<BalanceDto>(
-                        CodesConstant.INTERNAL_SERVER_ERROR, "Error al crear el balance inicial."
-                    );
-                }
+                    ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
+                    ErrorMessage = ex.Message,
+                    StackTrace = ex.StackTrace,
+                };
+
+                await _loggerDB.LogError(logId, status, logError, message);
+                _logger.LogError($"Error al crear el balance inicial para el ID {id}: {ex.Message}");
+
+                return ResponseHelper.ResponseError<BalanceDto>(
+                    CodesConstant.INTERNAL_SERVER_ERROR, "Error al crear el balance inicial."
+                );
             }
         }
+
 
     }
 }

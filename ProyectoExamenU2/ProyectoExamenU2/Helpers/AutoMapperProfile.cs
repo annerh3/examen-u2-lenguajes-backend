@@ -1,8 +1,12 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Newtonsoft.Json;
 using ProyectoExamenU2.Databases.LogsDataBase.Entities;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 using ProyectoExamenU2.Dtos.AccountCatalog;
 using ProyectoExamenU2.Dtos.Balance;
+using ProyectoExamenU2.Dtos.Journal;
+using ProyectoExamenU2.Dtos.Journal.DtosHelper;
 using ProyectoExamenU2.Dtos.Logs;
 
 namespace ProyectoExamenU2.Helpers
@@ -14,18 +18,51 @@ namespace ProyectoExamenU2.Helpers
         {
             MapsForAccounts();
             MapsForVBalances();
+            MapsForLogas();
+            MapsForJournalEntrys();
+        }
+        private void MapsForJournalEntrys()
+        {
+            //CreateMap<JournalEntryEntity, JournalDto>()
+            //    .ForMember(dest => dest.JournalEntryDetails , opt => opt.Ignore());
+            CreateMap<JournalEntryCreateDto , JournalEntryEntity>();
+            CreateMap<JournalEntryDetailDto , JournalEntryDetailEntity>();
+            CreateMap<AccountEntry, JournalEntryDetailEntity>();
+            CreateMap<JournalEntryEntity, JournalDto>()
+                .ForMember(dest => dest.JournalEntryDetails, opt => opt.MapFrom(src => src.JournalEntryDetails));
+                //.ForMember(dest => dest., opt => opt.Ignore())
+                //.ForMember(dest => dest.UpdatedByUser, opt => opt.Ignore());
+            CreateMap<JournalEntryDetailEntity, JournalEntryDetailDto>();
+
 
         }
-
         private void MapsForLogas()
         {
-            CreateMap<LogErrorEntity, LogErrorDto>();
+            //Logs
+            CreateMap<LogCreateDto, LogEntity>();
 
-            CreateMap<LogDetailEntity, LogDetailDto>();
-            // Este trae el detalle y el Error 
+            CreateMap<LogErrorEntity, LogErrorDto>()
+           .ForMember(dest => dest.StackTrace, opt => opt.Ignore()); // Ignorar StackTrace
+
+            CreateMap<LogErrorCreateDto, LogErrorEntity>();
+            CreateMap<LogDetailCreateDto, LogDetailEntity>();
+
+            // Detalles
+            CreateMap<LogDetailDto, LogDetailEntity>();
+            CreateMap<LogDetailEntity, LogDetailDto>()
+                .ForMember(dest => dest.OldValues, opt => opt.MapFrom(src =>
+                    string.IsNullOrEmpty(src.OldValues) ? null : JsonConvert.DeserializeObject<dynamic>(src.OldValues)))
+                .ForMember(dest => dest.NewValues, opt => opt.MapFrom(src =>
+                    string.IsNullOrEmpty(src.NewValues) ? null : JsonConvert.DeserializeObject<dynamic>(src.NewValues)));
+
+
+            // entidad a Dto
             CreateMap<LogEntity, LogDto>()
-                .ForMember(dest => dest.Detail, opt => opt.MapFrom(src => src.Detail)) 
-                .ForMember(dest => dest.Error, opt => opt.MapFrom(src => src.Error)); 
+                .ForMember(dest => dest.Detail, opt => opt.MapFrom(src => src.Detail))
+                .ForMember(dest => dest.Error, opt => opt.MapFrom(src => src.Error));
+            CreateMap<LogErrorEntity, LogErrorDto>()
+           .ForMember(dest => dest.StackTrace, opt => opt.Ignore()); // Ignorar StackTrace
+
         }
 
         private void MapsForVBalances()

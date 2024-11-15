@@ -6,8 +6,11 @@ using ProyectoExamenU2.Databases.PrincipalDataBase;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 using ProyectoExamenU2.Dtos.AccountCatalog;
 using ProyectoExamenU2.Dtos.Common;
+using ProyectoExamenU2.Dtos.Logs;
 using ProyectoExamenU2.Helpers;
 using ProyectoExamenU2.Services.Interfaces;
+using System.Reflection;
+using System.Text.Json;
 
 namespace ProyectoExamenU2.Services
 {
@@ -18,13 +21,15 @@ namespace ProyectoExamenU2.Services
         private readonly ILogger<IAccountCatalogService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IBalanceService _balanceService;
+        private readonly ILoggerDBService _loggerDB;
 
         public AccountCatalogService(
             ProyectoExamenU2Context context,
             IMapper mapper,
             ILogger<IAccountCatalogService> logger,
             IConfiguration configuration,
-            IBalanceService balanceService
+            IBalanceService balanceService,
+            ILoggerDBService loggerDB
             )
         {
             this._context = context;
@@ -32,92 +37,187 @@ namespace ProyectoExamenU2.Services
             this._logger = logger ;
             this._configuration = configuration;
             this._balanceService = balanceService;
+            this._loggerDB = loggerDB;
         }
         public async Task<ResponseDto<AccountDto>> CreateAcoountAsync(AccountCreateDto dto)
         {
-            // mapp
-            var AccountEntity = _mapper.Map<AccountCatalogEntity>(dto);
-            AccountEntity.IsActive = true;
-
-            // Vlidar que el Tipo de Dato sea 
-            // D --> DEBIT o tambien como Debito o Debe
-            // C --> CREDIT o tambien como CREDITO o Haber
-            if (dto.BehaviorType.ToString().ToUpper() != "D" && dto.BehaviorType.ToString().ToUpper() != "C") return ResponseHelper.ResponseError<AccountDto>(
-                    CodesConstant.BAD_REQUEST,
-                    $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.BehaviorTypeError} ");
-
-            // Validacion que no Exista una cuenta Igual
-            // se usa el PreCode+Code para ello
-            // var codeComplete = $"{dto.PreCode}{dto.Code}";
-            var existingAccount = await _context.AccountCatalogs.
-                FirstOrDefaultAsync(account => (account.PreCode == dto.PreCode) && (account.Code == dto.Code));
-
-            // si es nulo no existe ninguna
-            // si no es nulo existe almenos 1
-            if (existingAccount != null) return ResponseHelper.ResponseError<AccountDto>(
-                    CodesConstant.CONFLICT,
-                    $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.AccountAlreadyExists} : {existingAccount.AccountName}");
-
-            // Validando si existe el padre 
-            // verifica si el pre_code+code del padre es igual al pre_code del hijo
-            // Lo hize con ternario para ahorar lineas mucho tramite 
-            var parentAccount = dto.ParentId.HasValue
-                ? await _context.AccountCatalogs.FirstOrDefaultAsync(a => a.Id == dto.ParentId.Value)
-                : null;
-            if (AccountEntity.ParentId.HasValue)
+            Guid idPrueba = Guid.NewGuid();
+            Guid logId = Guid.Empty;
+            // Creacion del Detalle
+            var logDetail = new LogDetailDto
             {
-                //var parentAccount = await _context.AccountCatalogs.FirstOrDefaultAsync(account => account.Id == dto.ParentId.Value);
+                Id = Guid.NewGuid(),
+                EntityTableName = TablesConstant.ACCOUNT_CATALOG,
+                EntityRowId = Guid.Empty,
+                ChangeType = MessagesConstant.CREATE,
+                OldValues = null,
+                NewValues = JsonSerializer.Serialize(dto)
+            };
 
-                if (parentAccount == null) return ResponseHelper.ResponseError<AccountDto>(
-                        CodesConstant.BAD_REQUEST,
-                        $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.RECORD_NOT_FOUND} : {dto.ParentId}"
-                        );
-                // Revisando l Pre Code
-                string parentCompleteCode = $"{parentAccount.PreCode}{parentAccount.Code}";
-                if (parentCompleteCode != dto.PreCode) return ResponseHelper.ResponseError<AccountDto>(
-                        CodesConstant.BAD_REQUEST,
-                        $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.PreCodeMismatch}: Parent = {parentCompleteCode} , Accoun-PreCode {dto.PreCode} "
-                        );
+            // Creando el log
+            var log = new LogCreateDto
+            {
+                UserId = idPrueba,
+                ActionType = AcctionsConstants.DATA_CREATED,
+                Status = CodesConstant.PENDING,
+                Message = $"{LogsMessagesConstant.PENDING}",
+                DetailId = logDetail.Id,
+                ErrorId = null,
+            };
 
-                // Si el padre tiene hijos el movimiento se bloquea
-                // no se si tendremos un estado a validar ejemplo partida dada de baja pero sigue siendo hija
-                if (parentAccount.ChildAccounts == null)
+
+            logId = await _loggerDB.LogCreateLog(logDetail, log);
+
+
+
+            try
+            {
+                // Mapeo de la entidad
+                var accountEntity = _mapper.Map<AccountCatalogEntity>(dto);
+                accountEntity.IsActive = true;
+
+                // Validar el tipo de dato (D -> DEBIT o C -> CREDIT)
+                if (dto.BehaviorType.ToString().ToUpper() != "D" && dto.BehaviorType.ToString().ToUpper() != "C")
                 {
-                    parentAccount.ChildAccounts = new List<AccountCatalogEntity>();
+                    //Mandar Log -- datos invalidos
+                    await _loggerDB.LogStateUpdate( CodesConstant.BAD_REQUEST , logId , $"{LogsMessagesConstant.INVALID_DATA}");
+
+                    return ResponseHelper.ResponseError<AccountDto>(
+                        CodesConstant.BAD_REQUEST,
+                        $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.BehaviorTypeError}");
+                }
+                // Validar que no exista una cuenta con el mismo código completo
+                var existingAccount = await _context.AccountCatalogs
+                    .FirstOrDefaultAsync(account => (account.PreCode == dto.PreCode) && (account.Code == dto.Code));
+
+                if (existingAccount != null)
+                {
+                    //Mandar Log -- Record already exist
+                    await _loggerDB.LogStateUpdate(CodesConstant.CONFLICT, logId, $"{LogsMessagesConstant.RECORD_ALREADY_EXISTS}");
+                    return ResponseHelper.ResponseError<AccountDto>(
+                        CodesConstant.CONFLICT,
+                        $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.AccountAlreadyExists} : {existingAccount.AccountName}");
+                }
+                // Validar si existe la cuenta padre
+                var parentAccount = dto.ParentId.HasValue
+                    ? await _context.AccountCatalogs.FirstOrDefaultAsync(a => a.Id == dto.ParentId.Value)
+                    : null;
+
+
+
+
+                if (accountEntity.ParentId.HasValue)
+                {
+                    if (parentAccount == null)
+                    {
+                        //Mandar Log
+                        await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA}");
+                        return ResponseHelper.ResponseError<AccountDto>(
+                            CodesConstant.BAD_REQUEST,
+                            $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.RECORD_NOT_FOUND} : {dto.ParentId}");
+                    }
+                    string parentCompleteCode = $"{parentAccount.PreCode}{parentAccount.Code}";
+                    if (parentCompleteCode != dto.PreCode)
+                    {
+                        //Mandar Log
+                        await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA}");
+                        return ResponseHelper.ResponseError<AccountDto>(
+                            CodesConstant.BAD_REQUEST,
+                            $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.PreCodeMismatch}: Parent = {parentCompleteCode} , Account-PreCode {dto.PreCode}");
+                    }
+
+
+                   
+
+
+                    /// Log para las cuentas actualizadas
+                    var logDetailParentChild = new LogDetailDto
+                    {
+                        Id = Guid.NewGuid(),
+                        EntityTableName = TablesConstant.ACCOUNT_CATALOG,
+                        EntityRowId = parentAccount.Id,
+                        ChangeType = MessagesConstant.UPDATE,
+                        OldValues = JsonSerializer.Serialize(new
+                        {
+                            AllowsMovement = parentAccount.AllowsMovement,
+                            ChildAccounts = parentAccount.ChildAccounts.Select(c => c.Id)
+                        }),
+                        NewValues = null,
+                    };
+                    // Log adicional para el cambio de padrehijo 
+                    var logParentChild = new LogCreateDto
+                    {
+
+                        UserId = idPrueba,
+                        ActionType = AcctionsConstants.DATA_UPDATED,
+                        Status = CodesConstant.OK,
+                        Message = $"{LogsMessagesConstant.UPDATE_SUCCESS}",
+                        DetailId = logDetailParentChild.Id,
+                        ErrorId = null,
+                    };
+
+                    // Asegurarse de que la cuenta padre tiene una lista de cuentas hijas
+                    if (parentAccount.ChildAccounts == null)
+                        parentAccount.ChildAccounts = new List<AccountCatalogEntity>();
+
+                    // Añadir la nueva cuenta hija y actualizar el estado de movimiento del padre
+                    parentAccount.ChildAccounts.Add(accountEntity);
+                    parentAccount.AllowsMovement = false;
+                    _context.AccountCatalogs.Update(parentAccount);
+
+                    logDetailParentChild.NewValues = JsonSerializer.Serialize(new
+                    {
+                        childs = parentAccount.ChildAccounts.Select(c => c.Id),
+                    });
+                    await _loggerDB.LogCreateLog(logDetailParentChild, logParentChild);
+
+                }
+                if(parentAccount == null && accountEntity.PreCode != null || accountEntity.PreCode  != "")
+                {
+                    //Mandar Log
+                    await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA} -> Father ??? and Pre code?? ");
+                    return ResponseHelper.ResponseError<AccountDto>(
+                        CodesConstant.BAD_REQUEST,
+                        $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.PreCodeMismatch}: Parent = {null} ?? , Account-PreCode {dto.PreCode} ??");
                 }
 
-                // Agregar la nueva cuenta hija al padre
-                parentAccount.ChildAccounts.Add(AccountEntity);
 
-                // Accrualiza ya que ahora cuenta con almenos 1 hija
-                parentAccount.AllowsMovement = false;
+                // Proceder a crear la cuenta
+                _context.AccountCatalogs.Add(accountEntity);
+                await _context.SaveChangesAsync();
 
-                // Modifica el Registro del Padre
-                _context.AccountCatalogs.Update(parentAccount);
 
+                logDetail.EntityRowId = accountEntity.Id;
+                await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.CREATED, LogsMessagesConstant.COMPLETED_SUCCESS);
+
+                // Crear balance inicial
+                var result = await _balanceService.CreateInitBalance(accountEntity.Id);
+                var accountResult = _mapper.Map<AccountDto>(accountEntity);
+
+                // Respuesta de éxito
+                return ResponseHelper.ResponseSuccess<AccountDto>(
+                    CodesConstant.OK,
+                    $"{MessagesConstant.CREATE_SUCCESS} => Record: {accountResult.Id} :: Name :{accountResult.AccountName} ",
+                    accountResult);
             }
-            // TODO VERIFICAR SI EXISTIA ALGUN SALDO EN LA CUENTA PADRE CUENDO NO TENIA HIJAS 
-            // Y ASIGNARLO A LA CUENTA HIJA CREADA EN ESE MOMENTO Y REGISTRAR LA PARTIDA 
-            // 
+            catch (Exception ex)
+            {
+                var logError = new LogErrorCreateDto
+                {
+                    ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
+                    ErrorMessage = ex.Message,
+                    StackTrace = ex.StackTrace,
+                    TargetSite = ex.TargetSite.ToString(),
+                };
 
+                await _loggerDB.LogError(logId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);
 
-            //Proceder a Crear la Cuenta
-            _context.AccountCatalogs.Add(AccountEntity);
-            await _context.SaveChangesAsync();
+                // Manejo de errores generales
+                return ResponseHelper.ResponseError<AccountDto>(
+                    CodesConstant.INTERNAL_SERVER_ERROR,
+                    $"{MessagesConstant.CREATE_ERROR} => Error inesperado: {ex.Message}");
+            }
 
-            var result =  await _balanceService.CreateInitBalance(AccountEntity.Id);
-
-
-
-            var AccountResult = _mapper.Map<AccountDto>(AccountEntity);
-            // Respuesta
-            string accountFullCode = $"{dto.PreCode}{dto.Code}";
-
-            return ResponseHelper.ResponseSuccess<AccountDto>(
-                CodesConstant.OK,
-                $"{MessagesConstant.CREATE_SUCCESS} => Record: {AccountResult.Id} :: Name :{AccountResult.AccountName} ",
-                AccountResult);
-   
         }
 
         public Task<ResponseDto<AccountDto>> DowAccountByIdAsync(Guid id)
@@ -127,6 +227,33 @@ namespace ProyectoExamenU2.Services
 
         public async Task<ResponseDto<AccountDto>> EditAccountByIdAsync(AccountEditDto dto, Guid id)
         {
+            Guid idPrueba = Guid.NewGuid();
+            Guid logId = Guid.Empty;
+            // Creacion del Detalle
+            var logDetail = new LogDetailDto
+            {
+                Id = Guid.NewGuid(),
+                EntityTableName = TablesConstant.ACCOUNT_CATALOG,
+                EntityRowId = Guid.Empty,
+                ChangeType = MessagesConstant.UPDATE,
+                OldValues = null,
+                NewValues = JsonSerializer.Serialize(dto)
+            };
+
+            // Creando el log
+            var log = new LogCreateDto
+            {
+                UserId = idPrueba,
+                ActionType = AcctionsConstants.DATA_UPDATED,
+                Status = CodesConstant.PENDING,
+                Message = $"{LogsMessagesConstant.PENDING}",
+                DetailId = logDetail.Id,
+                ErrorId = null,
+            };
+
+
+            logId = await _loggerDB.LogCreateLog(logDetail, log);
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
@@ -135,70 +262,44 @@ namespace ProyectoExamenU2.Services
                     var existingAccount = await _context.AccountCatalogs.FirstOrDefaultAsync(a => a.Id == id);
                     // si no la encuentra
                     if (existingAccount is null)
+                    {
+                        //Mandar Log -- datos invalidos
+                        await _loggerDB.LogStateUpdate(CodesConstant.NOT_FOUND, logId, $"{LogsMessagesConstant.NOT_FOUND}");
+
                         return ResponseHelper.ResponseError<AccountDto>(
                             CodesConstant.NOT_FOUND,
                             $"{MessagesConstant.UPDATE_ERROR} => {MessagesConstant.RECORD_NOT_FOUND} : {id}");
+                    }
+
 
                     // Validacion del Tipo de Movimeinto
-                    if ( dto.BehaviorType.ToString().ToUpper() != "D" && dto.BehaviorType.ToString().ToUpper() != "C")
+                    if (dto.BehaviorType.ToString().ToUpper() != "D" && dto.BehaviorType.ToString().ToUpper() != "C")
+                    {
+                        //Mandar Log -- datos invalidos
+                        await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA}");
                         return ResponseHelper.ResponseError<AccountDto>(
                             CodesConstant.BAD_REQUEST,
                             $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.BehaviorTypeError}");
-
-                    //  PreCode+Code para duplicados
-                    //var duplicateAccount = await _context.AccountCatalogs.FirstOrDefaultAsync(account =>
-                    //    account.PreCode == dto.PreCode && account.Code == dto.Code && account.Id != id);
-                    //if (duplicateAccount != null)
-                    //    return ResponseHelper.ResponseError<AccountDto>(
-                    //        CodesConstant.CONFLICT,
-                    //        $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.AccountAlreadyExists} : {duplicateAccount.AccountName}");
-
-                    // Mapeo de la entidad a la nueva 
-                    //
-                    var entityMap = _mapper.Map(dto, existingAccount);
-
+                    }
+                           
                     // Logica para los padres
                     if (existingAccount.ParentId != dto.ParentId)
                     {
-                        // Elimina la cuenta actual hija del padre anterior, si tenia padre
-                        if (existingAccount.ParentId.HasValue)
-                        {
-                            var oldParent = await _context.AccountCatalogs.FirstOrDefaultAsync(a => a.Id == existingAccount.ParentId.Value);
-                            if (oldParent != null && oldParent.ChildAccounts != null)
-                            {
-                                oldParent.ChildAccounts.Remove(existingAccount);
-                                oldParent.AllowsMovement = !oldParent.ChildAccounts.Any();
-                                _context.AccountCatalogs.Update(oldParent);
-                            }
-                        }
-
-                        // asiga un nuevo padre si existe
-                        if (dto.ParentId.HasValue)
-                        {
-                            var newParent = await _context.AccountCatalogs.FirstOrDefaultAsync(a => a.Id == dto.ParentId.Value);
-                            if (newParent == null)
-                                return ResponseHelper.ResponseError<AccountDto>(
-                                    CodesConstant.BAD_REQUEST,
-                                    $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.RECORD_NOT_FOUND} : {dto.ParentId}");
-
-                            // Valida el Pre Code de el nuevo padre 
-                            var newParentCode = $"{newParent.PreCode}{newParent.Code}";
-                            if (newParentCode != dto.PreCode)
-                                return ResponseHelper.ResponseError<AccountDto>(
-                                    CodesConstant.BAD_REQUEST,
-                                    $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.PreCodeMismatch}: Parent = {newParentCode} , Account-PreCode = {dto.PreCode}");
-
-                            // Actualiza las relaciones de Hijos en El nuevo Padre
-                            if (newParent.ChildAccounts == null) newParent.ChildAccounts = new List<AccountCatalogEntity>();
-                            newParent.ChildAccounts.Add(existingAccount);
-                            newParent.AllowsMovement = false;
-                            _context.AccountCatalogs.Update(newParent);
-                        }
+                            await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA}");
+                            return ResponseHelper.ResponseError<AccountDto>(
+                                CodesConstant.BAD_REQUEST,
+                                $"{MessagesConstant.UPDATE_ERROR} : {MessagesConstant.PreCodeMismatch}?? -> Father Account Invalid Movement");
                     }
 
                     // Guarda los cambios en la base de datos
+                    _mapper.Map(dto, existingAccount);
+                    _context.Update(existingAccount);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
+
+                    logDetail.EntityRowId = id;
+                    await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.CREATED, LogsMessagesConstant.COMPLETED_SUCCESS);
+
 
                     // Retorna el DTO 
                     var result = _mapper.Map<AccountDto>(existingAccount);
@@ -209,6 +310,16 @@ namespace ProyectoExamenU2.Services
                 catch (Exception e)
                 {
                     await transaction.RollbackAsync();
+                    var logError = new LogErrorCreateDto
+                    {
+                        ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
+                        ErrorMessage = e.Message,
+                        StackTrace = e.StackTrace,
+                        TargetSite =  e.TargetSite.ToString(),
+                    };
+
+                    await _loggerDB.LogError(logId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);
+
                     _logger.LogError(e, "Error al editar la cuenta en el try.");
                     return ResponseHelper.ResponseError<AccountDto>(
                         CodesConstant.INTERNAL_SERVER_ERROR,
@@ -219,14 +330,43 @@ namespace ProyectoExamenU2.Services
 
         public async Task<ResponseDto<AccountDto>> GetAccountByIdAsync(Guid id)
         {
+            Guid idPrueba = Guid.NewGuid();
+            Guid logId = Guid.Empty;
+            // Creacion del Detalle
+            var logDetail = new LogDetailDto
+            {
+                Id = Guid.NewGuid(),
+                EntityTableName = TablesConstant.ACCOUNT_CATALOG,
+                EntityRowId = id,
+                ChangeType = MessagesConstant.GET,
+                OldValues = null,
+                NewValues = null
+            };
+
+            // Creando el log
+            var log = new LogCreateDto
+            {
+                UserId = idPrueba,
+                ActionType = AcctionsConstants.DATA_GET,
+                Status = CodesConstant.PENDING,
+                Message = $"{LogsMessagesConstant.PENDING}",
+                DetailId = logDetail.Id,
+                ErrorId = null,
+            };
+
             var AccountEntity = await _context.AccountCatalogs
                     .Include(account => account.ChildAccounts) // Incluye las cuentas hijas de primer nivel
                     .FirstOrDefaultAsync(ev => ev.Id == id);
 
 
             if (AccountEntity == null)
+            {
+                await _loggerDB.LogStateUpdate(CodesConstant.NOT_FOUND, logId, $"{LogsMessagesConstant.NOT_FOUND}");
                 return ResponseHelper.ResponseError<AccountDto>(CodesConstant.NOT_FOUND, $"{MessagesConstant.RECORD_NOT_FOUND} : Record {id}");
+            }
             var accountDto = _mapper.Map<AccountDto>(AccountEntity);
+
+            await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.OK, LogsMessagesConstant.COMPLETED_SUCCESS);
 
             return ResponseHelper.ResponseSuccess<AccountDto>(CodesConstant.OK, $"{MessagesConstant.RECORD_FOUND} ", accountDto);
         }
@@ -234,6 +374,31 @@ namespace ProyectoExamenU2.Services
 
         public async Task<ResponseDto<List<AccountDto>>> GetJustChildAccountListAsync()
         {
+            Guid idPrueba = Guid.NewGuid();
+            Guid logId = Guid.Empty;
+            // Creacion del Detalle
+            var logDetail = new LogDetailDto
+            {
+                Id = Guid.NewGuid(),
+                EntityTableName = TablesConstant.ACCOUNT_CATALOG,
+                EntityRowId = null,
+                ChangeType = MessagesConstant.GET,
+                OldValues = null,
+                NewValues = null
+            };
+
+            // Creando el log
+            var log = new LogCreateDto
+            {
+                UserId = idPrueba,
+                ActionType = AcctionsConstants.DATA_GET,
+                Status = CodesConstant.PENDING,
+                Message = $"{LogsMessagesConstant.PENDING}",
+                DetailId = logDetail.Id,
+                ErrorId = null,
+            };
+
+
             var childAccounts = await _context.AccountCatalogs
                 .Where(account => account.IsActive == true && // Solo cuentas activas
                                   account.AllowsMovement == true && // Permiten movimiento
@@ -245,13 +410,17 @@ namespace ProyectoExamenU2.Services
             // Verifica si existen cuentas hijas
             if (!childAccounts.Any())
             {
+                await _loggerDB.LogStateUpdate(CodesConstant.OK, logId, $"{LogsMessagesConstant.NOT_FOUND}  ::  GET_DATA {TablesConstant.ACCOUNT_CATALOG}");
                 return ResponseHelper.ResponseError<List<AccountDto>>(
                     CodesConstant.NOT_FOUND, $"{MessagesConstant.RECORD_NOT_FOUND}: No se encontraron cuentas hijas."
                 );
             }
 
+
             // Mapea las cuentas hijas a AccountDto
             var accountDtos = _mapper.Map<List<AccountDto>>(childAccounts);
+            await _loggerDB.LogStateUpdate(CodesConstant.OK, logId, $"{LogsMessagesConstant.COMPLETED_SUCCESS} =>>  GET_DATA {TablesConstant.ACCOUNT_CATALOG} : GetJustChildAccountListAsync()");
+
 
             return ResponseHelper.ResponseSuccess(
                 CodesConstant.OK, $"{MessagesConstant.RECORD_FOUND}", accountDtos

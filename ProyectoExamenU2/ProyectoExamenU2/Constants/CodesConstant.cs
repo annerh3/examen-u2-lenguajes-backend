@@ -17,7 +17,6 @@
         public const int BAD_GATEWAY = 502;                 // Error de puerta de enlace
         public const int SERVICE_UNAVAILABLE = 503;         // Servicio no disponible
         public const int GATEWAY_TIMEOUT = 504;             // Tiempo de espera agotado
-
         public const int PENDING = 102;                     // Procesando o pendriente
     }
 }

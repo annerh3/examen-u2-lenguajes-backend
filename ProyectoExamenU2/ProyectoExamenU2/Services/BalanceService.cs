@@ -139,6 +139,89 @@ namespace ProyectoExamenU2.Services
             }
         }
 
+        // funcion recursiva
+        // TODO AGREGAR LOS LOGS DE LOS CAMBIOS QUE VA REALIZANDO 
+        public async Task<decimal> CalcularSaldoAsync(AccountCatalogEntity account)
+        {
+
+
+
+
+            var balance = await _context.Balances.FirstOrDefaultAsync(b => b.AccountCatalogId == account.Id);
+
+            // si la cuenta no tiene hijas
+            // el saldo se retorna
+            // si es que hay si no encuentra osea queda nullo manda 0 
+            if (account.ChildAccounts.Count == 0)
+            {
+                return balance?.BalanceAmount ?? 0; 
+            }
+
+           
+            decimal saldoHijas = 0;
+            foreach (var hija in account.ChildAccounts)
+            {
+                // recuersion llamado a las hijas de la cuenta 
+                var hijaConHijas = await _context.AccountCatalogs
+                    .Include(a => a.ChildAccounts)
+                    .FirstOrDefaultAsync(a => a.Id == hija.Id);
+
+                saldoHijas += await CalcularSaldoAsync(hijaConHijas);
+            }
+
+            return saldoHijas;
+        }
+        public async Task<bool> UpdateAllBalancesAsync()
+        {
+            try
+            {
+                var cuentas = await _context.AccountCatalogs
+                    .Where(c => c.ParentId == null)
+                    .Include(c => c.ChildAccounts).ToListAsync();
+
+                foreach (var cuenta in cuentas)
+                {
+
+
+
+
+                    var cuentaConHijas = await _context.AccountCatalogs
+                        .Include(c => c.ChildAccounts)
+                        .FirstOrDefaultAsync(c => c.Id == cuenta.Id);
+
+                    // saldo
+                    var nuevoSaldo = await CalcularSaldoAsync(cuentaConHijas);
+
+                    // balance actual actualizado
+                    var balance = await _context.Balances.FirstOrDefaultAsync(b => b.AccountCatalogId == cuenta.Id);
+                    if (balance != null)
+                    {
+                        balance.BalanceAmount = nuevoSaldo;
+                    }
+                    else
+                    {
+                        // Si no existe creamos un nuevo balance
+                        // se supone nunca deveria de pasar 
+                        // creo que seria un error mas bien
+                        balance = new BalanceEntity
+                        {
+                            Id = cuenta.Id,
+                            BalanceAmount = nuevoSaldo
+                        };
+                        await _context.Balances.AddAsync(balance);
+                    }
+                    _context.Update(balance);
+                    await _context.SaveChangesAsync();
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+
 
     }
 }

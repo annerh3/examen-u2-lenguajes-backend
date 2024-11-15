@@ -1,0 +1,19 @@
+meta {
+  name: Get All Journals
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{PATH}}/journal-entry/get
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "guids": ["fb20b827-2ec7-4196-ebd8-08dd053cf5ac"],
+    "searchTerm": "caja",
+    "page": 1
+  }
+}

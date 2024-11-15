@@ -7,6 +7,7 @@ namespace ProyectoExamenU2.Services.Interfaces
     public interface IBalanceService
     {
         Task<ResponseDto<BalanceDto>> CreateInitBalance(Guid id);
+        Task<bool> UpdateAllBalancesAsync();
 
         //Task<ResponseDto<BalanceDto>> updateBalance(BalanceDto balance);
 

@@ -8,7 +8,7 @@ namespace ProyectoExamenU2.Controllers
 {
     [ApiController]
     [Route("api/journal-entry")]
-    public class JournalEntryController :ControllerBase
+    public class JournalEntryController : ControllerBase
     {
         private readonly IJournalService _journalService;
 
@@ -24,9 +24,17 @@ namespace ProyectoExamenU2.Controllers
         {
 
             var response = await _journalService.CreateJournalEntry(dto);
+
             return StatusCode(Response.StatusCode, response);
         }
+        [HttpGet("get")]
+        public async Task<ActionResult> GetAllJournals(searchJournalDto dto)
+        {
 
+            var response = await _journalService.GetProductsListAsync(dto);
+
+            return StatusCode(Response.StatusCode, response);
+        }
 
     }
 }

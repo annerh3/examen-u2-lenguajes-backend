@@ -379,7 +379,7 @@ namespace ProyectoExamenU2.Services
             {
                 Id = Guid.NewGuid(),
                 EntityTableName = TablesConstant.ACCOUNT_CATALOG,
-                EntityRowId = null,
+                EntityRowId = Guid.Empty,
                 ChangeType = MessagesConstant.GET,
                 OldValues = null,
                 NewValues = null
@@ -413,7 +413,7 @@ namespace ProyectoExamenU2.Services
                     CodesConstant.NOT_FOUND, $"{MessagesConstant.RECORD_NOT_FOUND}: No se encontraron cuentas hijas."
                 );
             }
-
+            logId = await _loggerDB.LogCreateLog(logDetail, log);
 
             // Mapea las cuentas hijas a AccountDto
             var accountDtos = _mapper.Map<List<AccountDto>>(childAccounts);

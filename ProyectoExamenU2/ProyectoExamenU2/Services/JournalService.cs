@@ -7,6 +7,7 @@ using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 using ProyectoExamenU2.Dtos.AccountCatalog;
 using ProyectoExamenU2.Dtos.Common;
 using ProyectoExamenU2.Dtos.Journal;
+using ProyectoExamenU2.Dtos.Journal.DtosHelper;
 using ProyectoExamenU2.Dtos.Logs;
 using ProyectoExamenU2.Helpers;
 using ProyectoExamenU2.Services.Interfaces;
@@ -21,13 +22,15 @@ namespace ProyectoExamenU2.Services
         private readonly IMapper _mapper;
         private readonly IAuditService _auditService;
         private readonly ILogger<JournalService> _logger;
+        private readonly IBalanceService _balanceService;
 
         public JournalService(
             ProyectoExamenU2Context context,
             ILoggerDBService loggerDB,
             IMapper mapper,
             IAuditService auditService,
-            ILogger<JournalService> logger
+            ILogger<JournalService> logger,
+            IBalanceService balanceService
             )
         {
             this._context = context;
@@ -35,6 +38,7 @@ namespace ProyectoExamenU2.Services
             this._mapper = mapper;
             this._auditService = auditService;
             this._logger = logger;
+            this._balanceService = balanceService;
         }
         public async Task<ResponseDto<JournalDto>> CreateJournalEntry(JournalEntryCreateDto dto)
         {
@@ -288,7 +292,7 @@ namespace ProyectoExamenU2.Services
 
                         // validando que tipo de movimiento es 
                         // movimiento igyual a la naturaleza de la cuenta
-                        if ((accounEntity.BehaviorType == 'C' && accountEntry.muvType == 'c') ||(accounEntity.BehaviorType == 'D' && accountEntry.muvType == 'D'))
+                        if ((accounEntity.BehaviorType == 'c' && accountEntry.muvType == 'C') ||(accounEntity.BehaviorType == 'D' && accountEntry.muvType == 'D'))
                         {
                             OldValueAccountEntry.BalanceAmount = OldValueAccountEntry.BalanceAmount + accountEntry.amount;
 
@@ -347,8 +351,11 @@ namespace ProyectoExamenU2.Services
                         //await _loggerDB.UpdateLogDetails();
 
                     }
-
                     await transaction.CommitAsync();
+                    var result = await _balanceService.UpdateAllBalancesAsync();
+
+                    if (!result) throw new InvalidOperationException("Error interno en la API al actualizar los saldos.");
+                    
 
                     var entity = _mapper.Map<JournalDto>(EntryEntity); 
 
@@ -379,6 +386,83 @@ namespace ProyectoExamenU2.Services
             }
 
 
+        }
+
+        public async Task<ResponseDto<PaginationDto<List<JournalDto>>>> GetProductsListAsync(searchJournalDto searchJournalDto)
+        {
+            var page = searchJournalDto.Page;
+            var accountsId = searchJournalDto.Guids;
+            var searchTerm = searchJournalDto.SearchTerm;
+
+
+            const int PAGE_SIZE = 10;
+            int startIndex = (page - 1) * PAGE_SIZE;
+
+            // Consulta Base patra la Bd
+            IQueryable<JournalEntryEntity> journalQuery = _context.JournalEntries
+                .Include(journal => journal.JournalEntryDetails) // incluye los detalles
+                .ThenInclude(ditail => ditail.Account)        // Incluye las ctas de los detalles
+                .AsQueryable();
+
+            // Aplicando el Filtro por cuentas si existe 
+            if (accountsId != null && accountsId.Any())
+            {
+                // todas las partidas que contengan alguna de los id mandados de cuentas
+                //el journal  donde se tiene almenos accounts en la columna de cuentas de catalogo 
+                journalQuery = journalQuery.Where(journal => accountsId.All(id  => journal.JournalEntryDetails.Any(d => d.AccountCatalogId == id)));
+            }
+
+
+            // busqueda 
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                journalQuery = journalQuery.Where(j =>
+                    j.Description.ToLower().Contains(searchTerm.ToLower()) || j.JournalEntryDetails.Any(d => d.Account.AccountName.ToLower().Contains(searchTerm.ToLower())));
+            }
+
+            int totalItems = await journalQuery.CountAsync();
+            int totalPages = (int)Math.Ceiling((double)totalItems / PAGE_SIZE);
+            var journals = await journalQuery
+                .OrderBy(j => j.Date)
+                .Skip(startIndex)
+                .Take(PAGE_SIZE)
+                .ToListAsync();
+
+            // Mapeo a DTO
+            var journalDtos = journals.Select(journal => new JournalDto
+            {
+                Id = journal.Id,
+                EntryNumber = journal.EntryNumber,
+                Description = journal.Description,
+                Date = journal.Date,
+                JournalEntryDetails = journal.JournalEntryDetails.Select(detail => new JournalEntryDetailDto
+                {
+                    Id = detail.Id,
+                    JournalEntryId = detail.JournalEntryId,
+                    AccountCatalogId = detail.AccountCatalogId,
+                    Account = detail.Account,
+                    Amount = detail.Amount,
+                    EntryType = detail.EntryType
+                }).ToList()
+            }).ToList();
+
+            // respuesta
+            return new ResponseDto<PaginationDto<List<JournalDto>>>
+            {
+                StatusCode = 200,
+                Status = true,
+                Message = "Listado de partidas obtenido correctamente",
+                Data = new PaginationDto<List<JournalDto>>
+                {
+                    CurrentPage = page,
+                    PageSize = PAGE_SIZE,
+                    TotalItems = totalItems,
+                    TotalPages = totalPages,
+                    Items = journalDtos,
+                    HasPreviousPage = page > 1,
+                    HasNextPage = page < totalPages
+                }
+            };
         }
     }
 }

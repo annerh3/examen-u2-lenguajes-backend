@@ -12,11 +12,20 @@ post {
 
 body:json {
   {
-    "preCode": null,
-    "code": "3",
-    "accountName":"Ctas a plazo Fijo",
-    "behaviorType": "D",
+    "preCode": "{{PRE_CODE}}",
+    "code": "{{CODE}}",
+    "accountName":"{{ACCOUNT_NAME}}",
+    "behaviorType": "{{BEHAVIOR_TYPE}}",
     "allowsMovement": true,
-    "parentId": null
+    "parentId": "{{PARENT_ID}}"
   }
+}
+
+vars:pre-request {
+  PRE_CODE: 102
+  CODE: 10
+  ACCOUNT_NAME: Despacito Proyecto
+  BEHAVIOR_TYPE: D
+  ALLOWS_MOVEMENT: true
+  PARENT_ID: efb050ef-97f7-4dfd-c389-08dd03ab77b5
 }

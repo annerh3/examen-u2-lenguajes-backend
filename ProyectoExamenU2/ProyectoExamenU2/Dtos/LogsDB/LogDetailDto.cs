@@ -6,7 +6,7 @@
         public string EntityTableName { get; set; }
         public Guid? EntityRowId { get; set; }
         public string ChangeType { get; set; }
-        public string OldValues { get; set; }
-        public string NewValues { get; set; }
+        public dynamic OldValues { get; set; }
+        public dynamic NewValues { get; set; }
     }
 }

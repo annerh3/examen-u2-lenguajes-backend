@@ -1,4 +1,5 @@
-﻿using ProyectoExamenU2.Dtos.Logs;
+﻿using ProyectoExamenU2.Dtos.Common;
+using ProyectoExamenU2.Dtos.Logs;
 
 namespace ProyectoExamenU2.Services.Interfaces
 {
@@ -12,5 +13,6 @@ namespace ProyectoExamenU2.Services.Interfaces
         Task LogStateUpdate(int  state , Guid id , string message );
         // La parte de Visualizacion del Usuario
         Task<IEnumerable<LogDto>> GetLogsAsync(DateTime fromDate, DateTime toDate, Guid userId, string actionType);
+        Task<ResponseDto<PaginationDto<List<LogDto>>>> GetAllLogsWithDetailsAsync(string searchTerm = "", int page = 1, int codeStatus = 0);
     }
 }

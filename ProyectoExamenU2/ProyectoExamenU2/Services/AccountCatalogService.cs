@@ -6,6 +6,8 @@ using ProyectoExamenU2.Databases.PrincipalDataBase;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
 using ProyectoExamenU2.Dtos.AccountCatalog;
 using ProyectoExamenU2.Dtos.Common;
+using ProyectoExamenU2.Dtos.Journal;
+using ProyectoExamenU2.Dtos.Journal.DtosHelper;
 using ProyectoExamenU2.Dtos.Logs;
 using ProyectoExamenU2.Helpers;
 using ProyectoExamenU2.Services.Interfaces;
@@ -22,6 +24,7 @@ namespace ProyectoExamenU2.Services
         private readonly IConfiguration _configuration;
         private readonly IBalanceService _balanceService;
         private readonly ILoggerDBService _loggerDB;
+        private readonly IJournalService _journalService;
 
         public AccountCatalogService(
             ProyectoExamenU2Context context,
@@ -29,7 +32,8 @@ namespace ProyectoExamenU2.Services
             ILogger<IAccountCatalogService> logger,
             IConfiguration configuration,
             IBalanceService balanceService,
-            ILoggerDBService loggerDB
+            ILoggerDBService loggerDB,
+            IJournalService journalService
             )
         {
             this._context = context;
@@ -38,6 +42,7 @@ namespace ProyectoExamenU2.Services
             this._configuration = configuration;
             this._balanceService = balanceService;
             this._loggerDB = loggerDB;
+            this._journalService = journalService;
         }
         public async Task<ResponseDto<AccountDto>> CreateAcoountAsync(AccountCreateDto dto)
         {
@@ -155,8 +160,41 @@ namespace ProyectoExamenU2.Services
 
                     // Asegurarse de que la cuenta padre tiene una lista de cuentas hijas
                     if (parentAccount.ChildAccounts == null)
-                        parentAccount.ChildAccounts = new List<AccountCatalogEntity>();
+                    {
+                        // veriicando que la cuenta padre no tenga saldos
+                        var amount = await _context.Balances.FindAsync(parentAccount.Id);
+                        // si tiene saldo se hace una contrapartida
+                        if (amount.BalanceAmount != 0)
+                        {
+                            var contraMuvTipeFather = (parentAccount.BehaviorType == 'C') ? 'D' : 'C';
+                            var contraMuvChild = accountEntity.BehaviorType == 'C' ? 'D' : 'C';
 
+                            var journalCreate = new JournalEntryCreateDto
+                            {
+                                Description = "Ajuste de los Saldos para la nueva subcuenta",
+                                Date = DateTime.Now,
+                                AccountsEntrys = [
+
+                                    new AccountEntry{
+                                        AccountId = parentAccount.Id,
+                                        amount = amount.BalanceAmount,
+                                        muvType = contraMuvTipeFather
+                                    },
+                                    new AccountEntry{
+                                        AccountId = accountEntity.Id,
+                                        amount = amount.BalanceAmount,
+                                        muvType = contraMuvChild
+                                    }
+                                ]
+                            };
+
+
+                            await _journalService.CreateJournalEntry(journalCreate);
+
+                        }
+
+                        parentAccount.ChildAccounts = new List<AccountCatalogEntity>();
+                    }
                     // Añadir la nueva cuenta hija y actualizar el estado de movimiento del padre
                     parentAccount.ChildAccounts.Add(accountEntity);
                     parentAccount.AllowsMovement = false;

@@ -475,25 +475,30 @@ namespace ProyectoExamenU2.Services
             {
 
                 var page = searchJournalDto.Page;
-                var accountsId = searchJournalDto.Guids;
                 var searchTerm = searchJournalDto.SearchTerm;
 
+
+                // Validar guids
+                var validAccountsId = searchJournalDto.Guids?
+                    .Where(id => !string.IsNullOrWhiteSpace(id)) 
+                    .Where(id => Guid.TryParse(id, out _))     
+                    .Select(id => Guid.Parse(id))             
+                    .ToList() ?? new List<Guid>();
 
                 const int PAGE_SIZE = 10;
                 int startIndex = (page - 1) * PAGE_SIZE;
 
-                // Consulta Base patra la Bd
+                // Consulta base
                 IQueryable<JournalEntryEntity> journalQuery = _context.JournalEntries
-                    .Include(journal => journal.JournalEntryDetails) // incluye los detalles
-                    .ThenInclude(ditail => ditail.Account)        // Incluye las ctas de los detalles
+                    .Include(journal => journal.JournalEntryDetails)
+                    .ThenInclude(detail => detail.Account)
                     .AsQueryable();
 
-                // Aplicando el Filtro por cuentas si existe 
-                if (accountsId != null && accountsId.Any())
+                // Aplicar filtro solo si hay GUIDs 
+                if (validAccountsId.Any())
                 {
-                    // todas las partidas que contengan alguna de los id mandados de cuentas
-                    //el journal  donde se tiene almenos accounts en la columna de cuentas de catalogo 
-                    journalQuery = journalQuery.Where(journal => accountsId.All(id => journal.JournalEntryDetails.Any(d => d.AccountCatalogId == id)));
+                    journalQuery = journalQuery.Where(journal =>
+                        journal.JournalEntryDetails.Any(detail => validAccountsId.Contains(detail.AccountCatalogId)));
                 }
 
 

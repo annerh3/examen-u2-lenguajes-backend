@@ -569,6 +569,114 @@ namespace ProyectoExamenU2.Services
             }
         }
 
+        public async Task<ResponseDto<List<JournalDto>>> GetJournalTop5ListAsync(int topQuantity = 5 )
+        {
+            Guid logId = Guid.Empty;
+            var userID = Guid.NewGuid(); 
+
+            var logDetail = new LogDetailDto
+            {
+                Id = Guid.NewGuid(),
+                EntityTableName = TablesConstant.JOURNAL_ENTRY,
+                EntityRowId = Guid.Empty,
+                ChangeType = MessagesConstant.GET,
+                OldValues = null,
+                NewValues = null,
+            };
+
+            if (userID == Guid.Empty)
+            {
+                var logExeption = new LogCreateDto
+                {
+                    UserId = userID,
+                    ActionType = AcctionsConstants.DATA_GET,
+                    Status = CodesConstant.UNAUTHORIZED,
+                    Message = $"{LogsMessagesConstant.NO_AUTHENTICATION}",
+                    DetailId = logDetail.Id,
+                    ErrorId = null,
+                };
+
+                logId = await _loggerDB.LogCreateLog(logDetail, logExeption);
+
+                return ResponseHelper.ResponseError<List<JournalDto>>(
+                    CodesConstant.UNAUTHORIZED,
+                    $"{MessagesConstant.CREATE_ERROR} => {MessagesConstant.UNAUTHENTICATED_USER_ERROR}");
+            }
+
+            var log = new LogCreateDto
+            {
+                UserId = userID,
+                ActionType = AcctionsConstants.DATA_GET,
+                Status = CodesConstant.PENDING,
+                Message = $"{LogsMessagesConstant.PENDING}",
+                DetailId = logDetail.Id,
+                ErrorId = null,
+            };
+
+            logId = await _loggerDB.LogCreateLog(logDetail, log);
+
+            try
+            {
+                // Consulta los 5 diarios mas recientes porla fecha
+                var journals = await _context.JournalEntries
+                    .Include(journal => journal.JournalEntryDetails)
+                        .ThenInclude(detail => detail.Account)
+                    .OrderByDescending(j => j.EntryNumber) 
+                    .Take(topQuantity)
+                    .ToListAsync();
+                // el to take si necesitasmas de 5 es aqui 
+                
+
+
+                // mapeo al dto de respuesta
+                var journalDtos = journals.Select(journal => new JournalDto
+                {
+                    Id = journal.Id,
+                    EntryNumber = journal.EntryNumber,
+                    Description = journal.Description,
+                    Date = journal.Date,
+                    JournalEntryDetails = journal.JournalEntryDetails.Select(detail => new JournalEntryDetailDto
+                    {
+                        Id = detail.Id,
+                        JournalEntryId = detail.JournalEntryId,
+                        AccountCatalogId = detail.AccountCatalogId,
+                        Account = detail.Account,
+                        Amount = detail.Amount,
+                        EntryType = detail.EntryType
+                    }).ToList()
+                }).ToList();
+
+                var result = new ResponseDto<List<JournalDto>>
+                {
+                    StatusCode = 200,
+                    Status = true,
+                    Message = $"{MessagesConstant.RECORDS_FOUND}",
+                    Data = journalDtos
+                };
+
+                logDetail.NewValues = JsonSerializer.Serialize(result);
+                await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.OK, LogsMessagesConstant.COMPLETED_SUCCESS);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                var logError = new LogErrorCreateDto
+                {
+                    ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
+                    ErrorMessage = ex.Message,
+                    StackTrace = ex.StackTrace,
+                    TargetSite = ex.TargetSite.ToString(),
+                };
+
+                await _loggerDB.LogError(logId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);
+
+                _logger.LogError(ex, $"Error al obtener los ultimos registros de partidas  {MessagesConstant.API_FATAL_ERROR}");
+                return ResponseHelper.ResponseError<List<JournalDto>>(
+                    CodesConstant.INTERNAL_SERVER_ERROR,
+                    $"{MessagesConstant.UPDATE_ERROR} => {MessagesConstant.API_FATAL_ERROR} :: {ex.Message} {ex.TargetSite}");
+            }
+        }
 
     }
 

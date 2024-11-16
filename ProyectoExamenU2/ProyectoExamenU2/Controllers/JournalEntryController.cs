@@ -27,7 +27,7 @@ namespace ProyectoExamenU2.Controllers
 
             return StatusCode(Response.StatusCode, response);
         }
-        [HttpGet("get")]
+        [HttpGet("allow")]
         public async Task<ActionResult> GetAllJournals(searchJournalDto dto)
         {
 
@@ -35,6 +35,13 @@ namespace ProyectoExamenU2.Controllers
 
             return StatusCode(Response.StatusCode, response);
         }
+        [HttpGet("top")]
+        public async Task<ActionResult> GetTopJournals(int quantity)
+        {
 
+            var response = await _journalService.GetJournalTop5ListAsync(quantity);
+
+            return StatusCode(Response.StatusCode, response);
+        }
     }
 }

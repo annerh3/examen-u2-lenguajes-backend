@@ -1,0 +1,20 @@
+meta {
+  name: GetTopJournals
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{PATH}}/journal-entry/allow
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "guids": null,
+    "searchTerm": "",
+    "page": 1
+  }
+  
+}

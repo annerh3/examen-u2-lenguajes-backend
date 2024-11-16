@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{PATH}}/journal-entry/allow
+  url: {{PATH}}/journal-entry/top?quantity=3
   body: json
   auth: none
+}
+
+query {
+  quantity: 3
 }
 
 body:json {

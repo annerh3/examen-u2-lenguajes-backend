@@ -5,15 +5,16 @@ meta {
 }
 
 get {
-  url: {{PATH}}/journal-entry/get
+  url: {{PATH}}/journal-entry/allow
   body: json
   auth: none
 }
 
 body:json {
   {
-    "guids": ["fb20b827-2ec7-4196-ebd8-08dd053cf5ac"],
-    "searchTerm": "caja",
+    "guids": null,
+    "searchTerm": "",
     "page": 1
   }
+  
 }

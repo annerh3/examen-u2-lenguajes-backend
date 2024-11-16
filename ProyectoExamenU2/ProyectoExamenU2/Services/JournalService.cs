@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Azure;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using ProyectoExamenU2.Constants;
 using ProyectoExamenU2.Databases.PrincipalDataBase;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
@@ -12,6 +14,7 @@ using ProyectoExamenU2.Dtos.Logs;
 using ProyectoExamenU2.Helpers;
 using ProyectoExamenU2.Services.Interfaces;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ProyectoExamenU2.Services
 {
@@ -131,7 +134,8 @@ namespace ProyectoExamenU2.Services
                                 $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> Fecha: {dto.Date}?? Ultimated Record date -> {lastJournalEntryEntity.Date}");
                         }
                     }
-                    if (dto.Date.Date > DateTime.Now.Date)
+                    
+                    if (DateTime.Compare(dto.Date.Date, DateTime.Now.Date) > 0)
                     {
                         await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA}:> Fecha: {dto.Date}?? {LogsMessagesConstant.FUTURE_DATE_ERROR}");
                         return ResponseHelper.ResponseError<JournalDto>(
@@ -147,10 +151,10 @@ namespace ProyectoExamenU2.Services
                         //validando si existe
                         if (!accountExists)
                         {
-                            await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.INVALID_DATA}:> Fecha: {dto.Date}?? {LogsMessagesConstant.FUTURE_DATE_ERROR}");
+                            await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId, $"{LogsMessagesConstant.NOT_FOUND}:> {accountEntry}?? {LogsMessagesConstant.NOT_FOUND}");
                             return ResponseHelper.ResponseError<JournalDto>(
                                 CodesConstant.BAD_REQUEST,
-                                $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> Fecha: {dto.Date}??  ->{LogsMessagesConstant.FUTURE_DATE_ERROR} ");
+                                $"{MessagesConstant.RECORD_NOT_FOUND} => { LogsMessagesConstant.NOT_FOUND}:> { accountEntry}?? { LogsMessagesConstant.NOT_FOUND}");
                         }
                         //Obteniendo la Cuenta
                         var accountEntity = await _context.AccountCatalogs.FindAsync(accountEntry.AccountId);
@@ -159,48 +163,16 @@ namespace ProyectoExamenU2.Services
                         // validando estados de la cuenta
                         // que sena activos y acepten movimientos
 
-                        // TODO HACER ESTO UN SWIC MEJOR 
-                        // -----------------------------------------------------------
                         // la cuenta permite movimientos pero no esta activa
-                        if (accountEntity.AllowsMovement && !accountEntity.IsActive)
+                        var (error, status) = await ValidationsMovements(logId, accountEntity);
+                        if (!status)
                         {
-                            await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
-                                $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}");
-
-                            return ResponseHelper.ResponseError<JournalDto>(
-                                CodesConstant.BAD_REQUEST,
-                                $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}"
-                            );
+                            return error;
                         }
-                        // si la cuenta no esta activa pero permite movbimientos
-                        if (!accountEntity.AllowsMovement && accountEntity.IsActive)
-                        {
-                            await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
-                                $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.BEBIAROR_ERROR}");
-
-                            return ResponseHelper.ResponseError<JournalDto>(
-                                CodesConstant.BAD_REQUEST,
-                                $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.BEBIAROR_ERROR}"
-                            );
-                        }
-                        //la cuenta no esta activa y no permite movimiento 
-                        if (!accountEntity.AllowsMovement && !accountEntity.IsActive)
-                        {
-                            
-                            await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
-                                $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.BEBIAROR_ERROR} && {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}");
-
-                            return ResponseHelper.ResponseError<JournalDto>(
-                                CodesConstant.BAD_REQUEST,
-                                $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.BEBIAROR_ERROR} && {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}"
-                            );
-                        }
-                        // fin del sitch 
-                        //-------------------------------------------------------------
 
                         var accountType = accountEntity.BehaviorType;
                         // simulando la transaccion
-                        var AccountBalance = await _context.Balances.FirstOrDefaultAsync( e => e.AccountCatalogId == accountEntry.AccountId);
+                        var AccountBalance = await _context.Balances.FirstOrDefaultAsync(e => e.AccountCatalogId == accountEntry.AccountId);
 
                         // varificando que si exista el balance
                         // en teoria cada que se crea una cuenta se realiza esto pero si no es un error critico
@@ -210,20 +182,11 @@ namespace ProyectoExamenU2.Services
                                 $"{TablesConstant.BALANCES}");
                         }
                         // verificando o simulando el movimiento para saber si sera valido 
-                        if((accountType == 'C'  && accountEntry.muvType == 'D') || (accountType == 'D' && accountEntry.muvType == 'C'))
+                        var ( errorSimulatedTransaccion, statusSimulatedTransaction) =  await SimulatedTransacction(logId, accountEntry, accountType, AccountBalance);
+                        if (!statusSimulatedTransaction)
                         {
-                            if((AccountBalance.BalanceAmount - accountEntry.amount) < 0)
-                            {
-                                await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
-                                $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.AMOUNT_ERROR} {accountEntry}");
-
-                                return ResponseHelper.ResponseError<JournalDto>(
-                                    CodesConstant.BAD_REQUEST,
-                                    $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.AMOUNT_ERROR} :{accountEntry} "
-                                );
-                            } 
+                            return errorSimulatedTransaccion;
                         }
-
                     }
 
                     // guardando la partida 
@@ -242,122 +205,14 @@ namespace ProyectoExamenU2.Services
                     // guardando y creando 2 un log por actualizacion
                     // log de la entrada 
                     // log del detalle creado de la partida
-                    foreach (var accountEntry in dto.AccountsEntrys)
-                    {
-                        var accounEntity = await _context.AccountCatalogs.FindAsync(accountEntry.AccountId);
-                        var OldValueAccountEntry = await _context.Balances.FirstOrDefaultAsync( e => e.AccountCatalogId == accountEntry.AccountId);
-                        
-                        // detalle del log para cada entrada
-                        var logDetailBalance = new LogDetailDto
-                        {
-                            Id = Guid.NewGuid(),
-                            EntityTableName = TablesConstant.BALANCES,
-                            EntityRowId = OldValueAccountEntry.Id,
-                            ChangeType = MessagesConstant.UPDATE,
-                            OldValues = JsonSerializer.Serialize(OldValueAccountEntry) ?? "",
-                            NewValues = null,
-                        };
-
-
-                        //Mapeo del Detail para guardarlo en la base de datos 
-
-                        var detailEntryEntity = _mapper.Map<JournalEntryDetailEntity>(accountEntry);
-                        detailEntryEntity.JournalEntryId = EntryEntity.Id;
-                        detailEntryEntity.AccountCatalogId = accounEntity.Id;
-                        detailEntryEntity.EntryType = accountEntry.muvType;
-
-
-                        // detalle del log de las entry journal details 
-                        var logDetailEntry = new LogDetailDto
-                        {
-                            Id = Guid.NewGuid(),
-                            EntityTableName = TablesConstant.JOURNAL_ENTRY_DETAIL,
-                            EntityRowId = null,
-                            ChangeType = MessagesConstant.CREATE,
-                            OldValues = null,
-                            NewValues =   JsonSerializer.Serialize( detailEntryEntity),
-                        };
-
-                        // log de la creacion del detalle 
-                        var logDeatilJornailEntrys = new LogCreateDto
-                        {
-                            UserId = userID,
-                            ActionType = AcctionsConstants.DATA_CREATED,
-                            Status = CodesConstant.PENDING,
-                            Message = $"{LogsMessagesConstant.PENDING}",
-                            DetailId = logDetailBalance.Id,
-                            ErrorId = null,
-                        };
-
-
-                        // validando que tipo de movimiento es 
-                        // movimiento igyual a la naturaleza de la cuenta
-                        if ((accounEntity.BehaviorType == 'c' && accountEntry.muvType == 'C') ||(accounEntity.BehaviorType == 'D' && accountEntry.muvType == 'D'))
-                        {
-                            OldValueAccountEntry.BalanceAmount = OldValueAccountEntry.BalanceAmount + accountEntry.amount;
-
-                        }
-                        // movimiento no natural al de la cuenta
-                        if ((accounEntity.BehaviorType == 'C' && accountEntry.muvType == 'D' )||(accounEntity.BehaviorType == 'D' && accountEntry.muvType == 'C'))
-                        {
-                            OldValueAccountEntry.BalanceAmount = OldValueAccountEntry.BalanceAmount - accountEntry.amount;
-
-                        }
-                        //actualizando los datos para el guardado
-                        OldValueAccountEntry.Date = DateTime.Now;
-                        logDetailBalance.NewValues = JsonSerializer.Serialize( OldValueAccountEntry);
-                        //logDetailBalance.EntityRowId = OldValueAccountEntry.Id;
-                        logDetailEntry.EntityRowId = Guid.Empty;
-                        // Creando el log
-                        var logEntry = new LogCreateDto
-                        {
-                            UserId = userID,
-                            ActionType = AcctionsConstants.DATA_UPDATED,
-                            Status = CodesConstant.PENDING,
-                            Message = $"{LogsMessagesConstant.PENDING}",
-                            DetailId = logDetailBalance.Id,
-                            ErrorId = null,
-                        };
-
-                        // creando las instancias de los Logs
-                        var logEntrId =  await _loggerDB.LogCreateLog(logDetailBalance , logEntry);
-                        var logEntryDetailId = await _loggerDB.LogCreateLog(logDetailEntry , logDeatilJornailEntrys );
-                        try
-                        {
-
-                            _context.Balances.Update(OldValueAccountEntry);
-                            _context.JournalEntryDetails.Add(detailEntryEntity);
-                            await _context.SaveChangesAsync();
-                            logDetailEntry.EntityRowId = detailEntryEntity.Id;
-                            await _loggerDB.UpdateLogDetails(logDetailBalance, logEntrId, CodesConstant.OK, LogsMessagesConstant.UPDATE_SUCCESS);
-                            await _loggerDB.UpdateLogDetails(logDetailEntry, logEntryDetailId, CodesConstant.OK, LogsMessagesConstant.COMPLETED_SUCCESS);
-
-                        }
-                        catch (Exception ex) {
-
-                            var logError = new LogErrorCreateDto
-                            {
-                                ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
-                                ErrorMessage = ex.Message,
-                                StackTrace = ex.StackTrace,
-                                TargetSite = ex.TargetSite.ToString(),
-                            };
-
-                            await _loggerDB.LogError(logEntrId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);
-
-                            throw;
-                        }
-
-                        //await _loggerDB.UpdateLogDetails();
-
-                    }
+                    await CreateDetailsEntry(dto, userID, EntryEntity);
                     await transaction.CommitAsync();
-                    var result = await _balanceService.UpdateAllBalancesAsync();
+                    var result = await _balanceService.UpdateAllBalancesAsync(userID);
 
                     if (!result) throw new InvalidOperationException("Error interno en la API al actualizar los saldos.");
-                    
 
-                    var entity = _mapper.Map<JournalDto>(EntryEntity); 
+
+                    var entity = _mapper.Map<JournalDto>(EntryEntity);
 
                     await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.CREATED, $"{LogsMessagesConstant.COMPLETED_SUCCESS}");
 
@@ -386,6 +241,182 @@ namespace ProyectoExamenU2.Services
             }
 
 
+        }
+
+        private async Task<(ResponseDto<JournalDto>,bool)> SimulatedTransacction(Guid logId, AccountEntry accountEntry, char accountType, BalanceEntity AccountBalance)
+        {
+            if ((accountType == 'C' && accountEntry.muvType == 'D') || (accountType == 'D' && accountEntry.muvType == 'C'))
+            {
+                if ((AccountBalance.BalanceAmount - accountEntry.amount) < 0)
+                {
+                    await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
+                    $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.AMOUNT_ERROR} {accountEntry}");
+
+                    return (ResponseHelper.ResponseError<JournalDto>(
+                        CodesConstant.BAD_REQUEST,
+                        $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.AMOUNT_ERROR} :{accountEntry} "
+                    ),false);
+                }
+            }
+            return (null, true);
+        }
+
+        private async Task<(ResponseDto<JournalDto>, bool)> ValidationsMovements(Guid logId, AccountCatalogEntity accountEntity)
+        {
+            if (accountEntity.AllowsMovement && !accountEntity.IsActive)
+            {
+                await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
+                    $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}");
+
+                return (ResponseHelper.ResponseError<JournalDto>(
+                    CodesConstant.BAD_REQUEST,
+                    $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}"
+                ), false);
+            }
+            // si la cuenta no esta activa pero permite movbimientos
+            if (!accountEntity.AllowsMovement && accountEntity.IsActive)
+            {
+                await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
+                    $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.BEBIAROR_ERROR}");
+
+                return (ResponseHelper.ResponseError<JournalDto>(
+                    CodesConstant.BAD_REQUEST,
+                    $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.BEBIAROR_ERROR}"
+                ), false);
+            }
+            //la cuenta no esta activa y no permite movimiento 
+            if (!accountEntity.AllowsMovement && !accountEntity.IsActive)
+            {
+
+                await _loggerDB.LogStateUpdate(CodesConstant.BAD_REQUEST, logId,
+                    $"{LogsMessagesConstant.INVALID_DATA}:> {LogsMessagesConstant.BEBIAROR_ERROR} && {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}");
+
+                return (ResponseHelper.ResponseError<JournalDto>(
+                    CodesConstant.BAD_REQUEST,
+                    $"{MessagesConstant.CREATE_ERROR} => {LogsMessagesConstant.INVALID_DATA} :> {LogsMessagesConstant.BEBIAROR_ERROR} && {LogsMessagesConstant.ACTIVE_ACCOUNT_ERROR}"
+                ),false);
+            }
+            return (null , true );
+        }
+
+        private async Task CreateDetailsEntry(JournalEntryCreateDto dto, Guid userID, JournalEntryEntity EntryEntity)
+        {
+            foreach (var accountEntry in dto.AccountsEntrys)
+            {
+                var accounEntity = await _context.AccountCatalogs.FindAsync(accountEntry.AccountId);
+                var OldValueAccountEntry = await _context.Balances.FirstOrDefaultAsync(e => e.AccountCatalogId == accountEntry.AccountId);
+
+                // detalle del log para cada entrada
+                var logDetailBalance = new LogDetailDto
+                {
+                    Id = Guid.NewGuid(),
+                    EntityTableName = TablesConstant.BALANCES,
+                    EntityRowId = OldValueAccountEntry.Id,
+                    ChangeType = MessagesConstant.UPDATE,
+                    OldValues = JsonSerializer.Serialize(OldValueAccountEntry) ?? "",
+                    NewValues = null,
+                };
+
+
+                //Mapeo del Detail para guardarlo en la base de datos 
+
+                var detailEntryEntity = _mapper.Map<JournalEntryDetailEntity>(accountEntry);
+                detailEntryEntity.JournalEntryId = EntryEntity.Id;
+                detailEntryEntity.AccountCatalogId = accounEntity.Id;
+                detailEntryEntity.EntryType = accountEntry.muvType;
+
+
+                // detalle del log de las entry journal details 
+                var logDetailEntry = new LogDetailDto
+                {
+                    Id = Guid.NewGuid(),
+                    EntityTableName = TablesConstant.JOURNAL_ENTRY_DETAIL,
+                    EntityRowId = null,
+                    ChangeType = MessagesConstant.CREATE,
+                    OldValues = null,
+                    NewValues = JsonSerializer.Serialize(detailEntryEntity),
+                };
+
+                // log de la creacion del detalle 
+                var logDeatilJornailEntrys = new LogCreateDto
+                {
+                    UserId = userID,
+                    ActionType = AcctionsConstants.DATA_CREATED,
+                    Status = CodesConstant.PENDING,
+                    Message = $"{LogsMessagesConstant.PENDING}",
+                    DetailId = logDetailBalance.Id,
+                    ErrorId = null,
+                };
+
+
+                // validando que tipo de movimiento es 
+                // movimiento igyual a la naturaleza de la cuenta
+                 OldValueAccountEntry.BalanceAmount = AmountMovType(accountEntry, accounEntity, OldValueAccountEntry);
+                //actualizando los datos para el guardado
+                OldValueAccountEntry.Date = DateTime.Now;
+                logDetailBalance.NewValues = JsonSerializer.Serialize(OldValueAccountEntry);
+                //logDetailBalance.EntityRowId = OldValueAccountEntry.Id;
+                logDetailEntry.EntityRowId = Guid.Empty;
+                // Creando el log
+                var logEntry = new LogCreateDto
+                {
+                    UserId = userID,
+                    ActionType = AcctionsConstants.DATA_UPDATED,
+                    Status = CodesConstant.PENDING,
+                    Message = $"{LogsMessagesConstant.PENDING}",
+                    DetailId = logDetailBalance.Id,
+                    ErrorId = null,
+                };
+
+                // creando las instancias de los Logs
+                var logEntrId = await _loggerDB.LogCreateLog(logDetailBalance, logEntry);
+                var logEntryDetailId = await _loggerDB.LogCreateLog(logDetailEntry, logDeatilJornailEntrys);
+                try
+                {
+
+                    _context.Balances.Update(OldValueAccountEntry);
+                    _context.JournalEntryDetails.Add(detailEntryEntity);
+                    await _context.SaveChangesAsync();
+                    logDetailEntry.EntityRowId = detailEntryEntity.Id;
+                    await _loggerDB.UpdateLogDetails(logDetailBalance, logEntrId, CodesConstant.OK, LogsMessagesConstant.UPDATE_SUCCESS);
+                    await _loggerDB.UpdateLogDetails(logDetailEntry, logEntryDetailId, CodesConstant.OK, LogsMessagesConstant.COMPLETED_SUCCESS);
+
+                }
+                catch (Exception ex)
+                {
+
+                    var logError = new LogErrorCreateDto
+                    {
+                        ErrorCode = CodesConstant.INTERNAL_SERVER_ERROR.ToString(),
+                        ErrorMessage = ex.Message,
+                        StackTrace = ex.StackTrace,
+                        TargetSite = ex.TargetSite.ToString(),
+                    };
+
+                    await _loggerDB.LogError(logEntrId, CodesConstant.INTERNAL_SERVER_ERROR, logError, LogsMessagesConstant.API_ERROR);
+
+                    throw;
+                }
+
+                //await _loggerDB.UpdateLogDetails();
+
+            }
+        }
+
+        private static decimal AmountMovType(AccountEntry accountEntry, AccountCatalogEntity accounEntity, BalanceEntity OldValueAccountEntry)
+        {
+            if ((accounEntity.BehaviorType == 'C' && accountEntry.muvType == 'C') || (accounEntity.BehaviorType == 'D' && accountEntry.muvType == 'D'))
+            {
+                return  OldValueAccountEntry.BalanceAmount + accountEntry.amount;
+
+            }
+            // movimiento no natural al de la cuenta
+            if ((accounEntity.BehaviorType == 'C' && accountEntry.muvType == 'D') || (accounEntity.BehaviorType == 'D' && accountEntry.muvType == 'C'))
+            {
+                return  OldValueAccountEntry.BalanceAmount - accountEntry.amount;
+
+            }
+            throw new Exception("Type Muvement is invalid");
         }
 
         public async Task<ResponseDto<PaginationDto<List<JournalDto>>>> GetProductsListAsync(searchJournalDto searchJournalDto)
@@ -537,5 +568,9 @@ namespace ProyectoExamenU2.Services
                     $"{MessagesConstant.UPDATE_ERROR} => {MessagesConstant.API_FATAL_ERROR} :: {ex.Message} {ex.TargetSite} ");
             }
         }
+
+
     }
+
+
 }

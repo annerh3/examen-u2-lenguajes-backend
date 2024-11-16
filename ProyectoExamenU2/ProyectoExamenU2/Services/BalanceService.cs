@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using ProyectoExamenU2.Constants;
 using ProyectoExamenU2.Databases.PrincipalDataBase;
 using ProyectoExamenU2.Databases.PrincipalDataBase.Entities;
@@ -140,87 +141,117 @@ namespace ProyectoExamenU2.Services
         }
 
         // funcion recursiva
-        // TODO AGREGAR LOS LOGS DE LOS CAMBIOS QUE VA REALIZANDO 
-        public async Task<decimal> CalcularSaldoAsync(AccountCatalogEntity account)
+        // TODO AGREGAR LOS LOGS DE LOS CAMBIOS--- QUE VA REALIZANDO LISTO
+        // YA DENME EL TITULO CON ESTO TREBNDO SOY BARBARO TITO 
+        // Pale estaria orgulloso de mi 
+        // TODO PROBAR YA EN EL FRONTEND CONNECTANDO 
+        public async Task<decimal> ActualizarSaldoYCrearLogsRecursivoAsync(AccountCatalogEntity cuenta, Guid userId)
         {
+            decimal nuevoSaldo = 0;
 
-
-
-
-            var balance = await _context.Balances.FirstOrDefaultAsync(b => b.AccountCatalogId == account.Id);
-
-            // si la cuenta no tiene hijas
-            // el saldo se retorna
-            // si es que hay si no encuentra osea queda nullo manda 0 
-            if (account.ChildAccounts.Count == 0)
+            // Esta es la parte recursiva donde si se tienen cuentas hijas se activanuevamente 
+            if (cuenta.ChildAccounts.Any())
             {
-                return balance?.BalanceAmount ?? 0; 
+                //si tiene hijas para cada hija haz lo siguiente 
+                foreach (var hija in cuenta.ChildAccounts)
+                {
+                    var cuentaHijaConHijas = await _context.AccountCatalogs
+                        .Include(c => c.ChildAccounts)
+                        .FirstOrDefaultAsync(c => c.Id == hija.Id);
+
+                    // llamada recursiva que termina retornando el nuevo saldo 
+                    nuevoSaldo += await ActualizarSaldoYCrearLogsRecursivoAsync(cuentaHijaConHijas, userId);
+                }
+            }
+            // si no tiene mas hijas o en una rama llego al fdinal de ella
+            // ejemplo 
+            // Activos
+            //  - Activos Corrientes
+            //    - Efectivo
+            else
+            {
+                // como no tiene hijas retorna el saldo directamente 
+                var balance = await _context.Balances.FirstOrDefaultAsync(b => b.AccountCatalogId == cuenta.Id);
+                nuevoSaldo = balance?.BalanceAmount ??  0;
+                
+
+            }
+            // Crear el log para la cuenta actual
+            // obteniendo el valor anterior 
+            var saldoAnterior = await _context.Balances
+                .Where(b => b.AccountCatalogId == cuenta.Id)
+                .Select(b => b.BalanceAmount)
+                .FirstOrDefaultAsync();
+
+            var logDetail = new LogDetailDto
+            {
+                Id = Guid.NewGuid(),
+                EntityTableName = TablesConstant.BALANCES,
+                EntityRowId = cuenta.Id,
+                ChangeType = MessagesConstant.UPDATE,
+                OldValues = JsonSerializer.Serialize(new { BalanceAmount = saldoAnterior }),
+                NewValues = JsonSerializer.Serialize(new { BalanceAmount = nuevoSaldo })
+            };
+
+            var log = new LogCreateDto
+            {
+                UserId = userId,
+                ActionType = AcctionsConstants.DATA_UPDATED,
+                Status = CodesConstant.PENDING,
+                Message = LogsMessagesConstant.PENDING,
+                DetailId = logDetail.Id,
+                ErrorId = null
+            };
+
+            var logId = await _loggerDB.LogCreateLog(logDetail, log);
+
+            var balanceActual = await _context.Balances.FirstOrDefaultAsync(b => b.AccountCatalogId == cuenta.Id);
+
+            // si viene vacio est0 es un error 
+            // por que al momento de crearse se estan registrando
+            if (balanceActual != null)
+            {
+                balanceActual.BalanceAmount = nuevoSaldo;
+            }
+            else
+            {
+                throw new Exception($"FATAL !!{LogsMessagesConstant.INVALID_DATA  }  =>> {LogsMessagesConstant.API_ERROR} ");
             }
 
-           
-            decimal saldoHijas = 0;
-            foreach (var hija in account.ChildAccounts)
-            {
-                // recuersion llamado a las hijas de la cuenta 
-                var hijaConHijas = await _context.AccountCatalogs
-                    .Include(a => a.ChildAccounts)
-                    .FirstOrDefaultAsync(a => a.Id == hija.Id);
+            _context.Update(balanceActual);
+            await _context.SaveChangesAsync();
+            await _loggerDB.UpdateLogDetails(logDetail, logId, CodesConstant.OK, LogsMessagesConstant.COMPLETED_SUCCESS);
 
-                saldoHijas += await CalcularSaldoAsync(hijaConHijas);
-            }
-
-            return saldoHijas;
+            // retorno al padre el saldo nuevo
+            return nuevoSaldo;
         }
-        public async Task<bool> UpdateAllBalancesAsync()
+
+        public async Task<bool> UpdateAllBalancesAsync(Guid userId)
         {
             try
             {
-                var cuentas = await _context.AccountCatalogs
+                // Obtener todas las cuentas principales
+                // Estan son las raiz 
+                // cuentas con pre code null y cuenta parent id null
+                var cuentasPadres = await _context.AccountCatalogs
                     .Where(c => c.ParentId == null)
-                    .Include(c => c.ChildAccounts).ToListAsync();
+                    .Include(c => c.ChildAccounts)
+                    .ToListAsync();
 
-                foreach (var cuenta in cuentas)
+                foreach (var cuentaPadre in cuentasPadres)
                 {
-
-
-
-
-                    var cuentaConHijas = await _context.AccountCatalogs
-                        .Include(c => c.ChildAccounts)
-                        .FirstOrDefaultAsync(c => c.Id == cuenta.Id);
-
-                    // saldo
-                    var nuevoSaldo = await CalcularSaldoAsync(cuentaConHijas);
-
-                    // balance actual actualizado
-                    var balance = await _context.Balances.FirstOrDefaultAsync(b => b.AccountCatalogId == cuenta.Id);
-                    if (balance != null)
-                    {
-                        balance.BalanceAmount = nuevoSaldo;
-                    }
-                    else
-                    {
-                        // Si no existe creamos un nuevo balance
-                        // se supone nunca deveria de pasar 
-                        // creo que seria un error mas bien
-                        balance = new BalanceEntity
-                        {
-                            Id = cuenta.Id,
-                            BalanceAmount = nuevoSaldo
-                        };
-                        await _context.Balances.AddAsync(balance);
-                    }
-                    _context.Update(balance);
-                    await _context.SaveChangesAsync();
+                    //esta funcion recibe el primer hijo 
+                    // calcula el saldo recursivamente para cada hija dentro de el 
+                    await ActualizarSaldoYCrearLogsRecursivoAsync(cuentaPadre, userId);
                 }
+
                 return true;
             }
             catch (Exception e)
             {
-                return false;
+                throw new Exception($"{LogsMessagesConstant.API_ERROR} => {LogsMessagesConstant.INVALID_DATA} ERROR EN LA RECURCION ::{e}");
             }
         }
-
 
 
     }
